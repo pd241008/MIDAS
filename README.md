@@ -29,20 +29,36 @@ instead of being dropped.
 
 ## Architecture
 
-```
-┌──────────┐   bounded    ┌──────────┐   bounded    ┌──────────┐
-│  Sensor  │───channel───▶│ Defense  │───channel───▶│ Rotation │
-│  Thread  │              │  Thread  │              │  Thread  │
-│  Core 0  │              │  Core 1  │              │  Core 2  │
-└──────────┘              └──────────┘              └──────────┘
-     │                         │                         │
-     │ feature vectors         │ M_t, epsilon_p,         │ Givens rotation +
-     │ (trait SensorSource)    │ delta_theta             │ inference
-                               │                         │
-                          ┌────┴────┐               ┌────┴────┐
-                          │  Ring   │               │  Model  │
-                          │  Buffer │               │ (trait) │
-                          └─────────┘               └─────────┘
+```mermaid
+graph LR
+    subgraph S["Core 0"]
+        ST["Sensor Thread"]
+        SS["SensorSource<br/>(trait)"]
+        ST --- SS
+    end
+    subgraph D["Core 1"]
+        DT["Defense Thread"]
+        RB["Ring Buffer"]
+        DT --- RB
+    end
+    subgraph R["Core 2"]
+        RT["Rotation Thread"]
+        M["InferenceModel<br/>(trait)"]
+        RT --- M
+    end
+
+    ST -- "bounded channel<br/>feature vectors" --> DT
+    DT -- "bounded channel<br/>DefenseCommand" --> RT
+
+    style S fill:#1a1a2e,stroke:#e94560,color:#eee
+    style D fill:#16213e,stroke:#0f3460,color:#eee
+    style R fill:#0f3460,stroke:#e94560,color:#eee
+    style ST fill:#1a1a2e,stroke:#e94560,color:#eee
+    style DT fill:#16213e,stroke:#0f3460,color:#eee
+    style RT fill:#0f3460,stroke:#e94560,color:#eee
+    style SS fill:#1a1a2e,stroke:#e94560,color:#eee
+    style RB fill:#16213e,stroke:#0f3460,color:#eee
+    style M fill:#0f3460,stroke:#e94560,color:#eee
 ```
 
 - **Core 0** — receives feature vectors (TCP/UART mock behind a trait, swappable for

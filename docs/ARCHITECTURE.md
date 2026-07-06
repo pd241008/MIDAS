@@ -4,17 +4,29 @@
 
 EDGE runs three pinned threads communicating over bounded crossbeam channels:
 
-```
-                     bounded(4)                    bounded(4)
-  Sensor Thread ──────────────────▶ Defense Thread ──────────────────▶ Rotation Thread
-  (Core 0)                          (Core 1)                           (Core 2)
-      │                                │                                   │
-      │  read feature vector           │  compute momentum & epsilon       │  Givens rotation
-      │  via SensorSource trait        │  decide rotation angle            │  inference via
-      │  (blocking send if full)       │  send DefenseCommand              │  InferenceModel trait
-      ▼                                ▼                                   ▼
-  MockSensor /                   RingBuffer                          MockModel /
-  real TCP/UART                  (Arc<RwLock<>>)                     TfliteModel (FFI)
+```mermaid
+graph TB
+    subgraph "Core 0"
+        ST["Sensor Thread"]
+        SS["SensorSource (trait)"]
+        ST --- SS
+    end
+    subgraph "Core 1"
+        DT["Defense Thread"]
+        RB["Ring Buffer<br/>(Arc RwLock)"]
+        DT --- RB
+    end
+    subgraph "Core 2"
+        RT["Rotation Thread"]
+        M["InferenceModel (trait)"]
+        RT --- M
+    end
+
+    ST -- "bounded channel<br/>feature vectors" --> DT
+    DT -- "bounded channel<br/>DefenseCommand<br/>(delta_theta, epsilon_p, phase)" --> RT
+    SS -.->|"MockSensor /<br/>real TCP-UART"| ST
+    RB -.->|"v_t, v_t-1"| DT
+    M -.->|"MockModel /<br/>TfliteModel (FFI)"| RT
 ```
 
 ### Backpressure
