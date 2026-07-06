@@ -1,0 +1,21 @@
+[package]
+name = "edge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+edge-core = { path = "../edge-core" }
+crossbeam-channel = "0.5"
+core_affinity = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+env_logger = "0.11"
+libc = "0.2"
+rand = "0.8"
+csv = "1.3"
+
+[features]
+tflite = []
+
+# TODO: When real TFLite C++ FFI is set up, link via build.rs to libtensorflowlite_c.so
