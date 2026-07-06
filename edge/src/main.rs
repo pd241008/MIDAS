@@ -119,6 +119,8 @@ fn run_pipeline() {
 fn run_harness() {
     info!("=== Harness Mode ===");
 
+    // Generate report tables matching the paper's LaTeX table shapes.
+    // Each row is a placeholder; replace with real measurements.
     let defense_success = report::placeholder_defense_success();
     let latency = report::placeholder_latency();
     let pgd_iters = report::placeholder_pgd_iterations();
@@ -135,8 +137,18 @@ fn run_harness() {
 
     let attack_configs = attacks::paper_attack_configs();
     for cfg in &attack_configs {
-        info!("attack config: {}", cfg);
+        info!("attack config: {} — will run under naive AND adaptive attacker models", cfg);
     }
+
+    // TODO: wire up real attack loop.
+    // For each attack config, run under both AttackerModel::Naive and ::Adaptive.
+    // Naive: use the Rust-based PGD/FGSM/C&W in attacks.rs (finite-difference gradients).
+    // Adaptive: use the PyTorch shadow model in adaptivetools/ which mirrors
+    // edge-core's math differentiably. Verify gradients with finite-difference
+    // check before trusting any adaptive-attacker number.
+    // Report TWO rows per attack:
+    //   "midas_edge"     -> naive attacker result
+    //   "midas_edge_adaptive" -> adaptive attacker result
 }
 
 fn main() {
