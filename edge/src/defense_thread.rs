@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use crossbeam_channel::{Receiver, Sender};
 use log::info;
 use edge_core::ring_buffer::RingBuffer;
-use edge_core::trajectory::{compute_momentum, penetration_epsilon};
+use edge_core::trajectory::penetration_epsilon_windowed;
 use edge_core::rotation::rotation_angle;
 use edge_core::config::MidasConfig;
 
@@ -28,19 +28,15 @@ pub fn defense_thread(
             }
         };
 
-        let (epsilon_p, _m_t) = {
+        let epsilon_p = {
             let mut rb = ring_buffer.write().unwrap();
-            let v_t_minus_1 = rb.second_latest().cloned();
             rb.push(v_t.clone());
 
-            match v_t_minus_1 {
-                Some(prev) => {
-                    let m = compute_momentum(&v_t, &prev);
-                    let eps = penetration_epsilon(&v_t, &prev, m);
-                    (eps, m)
-                }
-                None => (0.0, 0.0),
-            }
+            // Use the windowed penetration epsilon (window averaged, not single-step)
+            // This accumulates sustained aligned magnitude and resists the
+            // convergent-attacker failure mode.
+            let window = rb.window();
+            penetration_epsilon_windowed(&window)
         };
 
         let delta_theta = rotation_angle(

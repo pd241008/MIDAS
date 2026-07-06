@@ -64,6 +64,35 @@ pub fn paper_attack_configs() -> Vec<AttackConfig> {
     configs
 }
 
+/// Attacker model enum: every attack config is run under both variants.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AttackerModel {
+    /// Treats delta_theta and the rotation basis as fixed constants with respect
+    /// to x_t. Gradients are computed against the defended output without
+    /// differentiating through the trajectory/rotation computation.
+    Naive,
+    /// Backpropagates through the entire trajectory-to-rotation pipeline end to end:
+    ///   v_t -> M_t -> epsilon_p -> delta_theta -> R(delta_theta)
+    /// with no detaching or substitution anywhere in that chain.
+    /// Since the rotation basis is fixed (not attacker-coupled), the differentiable
+    /// path runs only through delta_theta's magnitude — not the plane itself.
+    ///
+    /// Implementation approach (decided): host-side PyTorch shadow model.
+    /// See `adaptivetools/` (expected location for the Python differentiable mirror).
+    Adaptive,
+}
+
+impl fmt::Display for AttackerModel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AttackerModel::Naive => write!(f, "naive"),
+            AttackerModel::Adaptive => write!(f, "adaptive"),
+        }
+    }
+}
+
+// --- Naive attackers (pure Rust, finite-difference gradient estimation) ---
+
 pub fn pgd_attack(
     x: &[f32],
     alpha: f32,
@@ -147,3 +176,37 @@ pub fn cw_l2_attack(
     // TODO: full C&W L2 implementation
     x.to_vec()
 }
+
+// --- Adaptive attacker (PyTorch shadow model) ---
+//
+// DESIGN DECISION (per spec): The adaptive attacker requires a differentiable
+// shadow implementation of the rotation/projection math, since backpropagating
+// through the real Rust pipeline over TCP won't give gradients.
+//
+// Approach: Host-side PyTorch shadow model.
+//   Location: `adaptivetools/` at workspace root (Python package, not in Rust tree).
+//   Contents:
+//     - PyTorch module mirroring edge-core's rotation math
+//       (compute_momentum, penetration_epsilon_windowed, rotation_angle,
+//        rotate_manifold_givens_fixed_basis, project_to_manifold)
+//     - Finite-difference gradient checker to verify analytic gradients
+//       match numerical gradients before using any adaptive-attacker number.
+//     - Attack loop: PGD/FGSM/C&W against the differentiable shadow,
+//       reporting success rates under AttackerModel::Adaptive.
+//
+// Verification requirement (not optional):
+//   Before trusting any adaptive-attacker success-rate number, verify gradient
+//   flow is unbroken end-to-end via a finite-difference check against the
+//   analytic gradient path. A broken gradient graph will silently understate
+//   attack success and produce a falsely reassuring result.
+//
+// Results table requirement:
+//   Every attack config produces TWO rows:
+//     "MIDAS-Edge, naive attacker"
+//     "MIDAS-Edge, adaptive attacker"
+//   Never report only one.
+//
+// Numerically-differentiable fallback:
+//   If the PyTorch shadow is not available, a finite-difference gradient
+//   estimator (central differences through the real Rust pipeline over TCP)
+//   can serve as a sanity check, at O(D) forward passes per gradient step.
