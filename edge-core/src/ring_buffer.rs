@@ -40,6 +40,12 @@ impl RingBuffer {
         }
     }
 
+    /// Return a snapshot of the entire window as a Vec (oldest first).
+    /// Used by the windowed penetration_epsilon computation.
+    pub fn window(&self) -> Vec<Vec<f32>> {
+        self.buffer.iter().cloned().collect()
+    }
+
     pub fn clear(&mut self) {
         self.buffer.clear();
     }

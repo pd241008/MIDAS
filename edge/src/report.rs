@@ -7,7 +7,8 @@ pub struct DefenseSuccessRow {
     pub adv_training: f64,
     pub input_smoothing: f64,
     pub chen_query_blinding: f64,
-    pub midas_edge: f64,
+    pub midas_edge_naive: f64,
+    pub midas_edge_adaptive: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -53,7 +54,8 @@ pub fn placeholder_defense_success() -> Vec<DefenseSuccessRow> {
             adv_training: 0.45,
             input_smoothing: 0.32,
             chen_query_blinding: 0.28,
-            midas_edge: 0.87,
+            midas_edge_naive: 0.87,
+            midas_edge_adaptive: 0.85,
         },
         DefenseSuccessRow {
             attack: "FGSM eps=0.1".into(),
@@ -61,7 +63,8 @@ pub fn placeholder_defense_success() -> Vec<DefenseSuccessRow> {
             adv_training: 0.52,
             input_smoothing: 0.41,
             chen_query_blinding: 0.35,
-            midas_edge: 0.92,
+            midas_edge_naive: 0.92,
+            midas_edge_adaptive: 0.90,
         },
         DefenseSuccessRow {
             attack: "C&W L2".into(),
@@ -69,7 +72,8 @@ pub fn placeholder_defense_success() -> Vec<DefenseSuccessRow> {
             adv_training: 0.38,
             input_smoothing: 0.29,
             chen_query_blinding: 0.31,
-            midas_edge: 0.84,
+            midas_edge_naive: 0.84,
+            midas_edge_adaptive: 0.81,
         },
     ]
 }
