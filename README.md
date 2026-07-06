@@ -4,7 +4,6 @@
 adversarial defense for TinyML classifiers on ARM Cortex-A76.
 
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-blue)](https://www.rust-lang.org)
-[![IEEE ICCD 2026](https://img.shields.io/badge/paper-ICCD%202026-purple)](#)
 [![arXiv](https://img.shields.io/badge/arXiv-TBD-red)](#)
 
 ---
