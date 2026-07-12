@@ -140,6 +140,18 @@ fn run_harness() {
         info!("attack config: {} — will run under naive AND adaptive attacker models", cfg);
     }
 
+    // Export c_base and basis to JSON for the Python shadow model
+    let c_base = vec![0.0_f32; 10]; // Matches load_manifold in rotation_thread.rs for now
+    let basis = edge_core::rotation::compute_fixed_basis(&c_base);
+    let basis_json = serde_json::json!({
+        "c_base": c_base,
+        "basis": basis
+    });
+    std::fs::create_dir_all("results").unwrap_or_default();
+    std::fs::write("results/basis.json", basis_json.to_string())
+        .expect("failed to write results/basis.json");
+    info!("exported basis.json for PyTorch shadow evaluation");
+
     // TODO: wire up real attack loop.
     // For each attack config, run under both AttackerModel::Naive and ::Adaptive.
     // Naive: use the Rust-based PGD/FGSM/C&W in attacks.rs (finite-difference gradients).
