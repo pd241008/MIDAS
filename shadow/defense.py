@@ -134,20 +134,21 @@ class MockClassifierLoss(torch.nn.Module):
         return torch.fmod(s, 10.0)
 
 class SmoothMockModel(torch.nn.Module):
-    def __init__(self, in_features=10):
+    """
+    Fixed-weight linear classifier used ONLY as a differentiable attack surrogate.
+    Not a replacement for Rust's MockModel — that stays as-is for pipeline tests.
+
+    bias b is calibrated against a representative batch so that ~half the points
+    sit near the decision boundary, rather than drawn randomly (which pushes
+    nearly every point to near-certain confidence at any dimensionality).
+    """
+    def __init__(self, d, calibration_batch, seed=1337):
         super().__init__()
-        # Use a fixed, stable random seed for the weights so it's consistent across runs
-        torch.manual_seed(42)
-        self.w = torch.nn.Parameter(torch.randn(in_features))
-        self.b = torch.nn.Parameter(torch.randn(1))
-        
+        g = torch.Generator().manual_seed(seed)
+        self.w = torch.randn(d, generator=g)
+        with torch.no_grad():
+            scores = calibration_batch @ self.w
+            self.b = scores.median().item()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Logistic loss against a fixed target. 
-        Returns a scalar loss that the attacker wants to maximize.
-        """
-        logits = torch.sum(self.w * x, dim=-1) + self.b
-        # Let's say the target is always class 1, and the attacker is maximizing the logit for class 1
-        # To make it a smooth loss that can be maximized endlessly (or up to saturation),
-        # we can just return the raw logit, or a sigmoid
-        return logits
+        return torch.sigmoid(x @ self.w - self.b)
