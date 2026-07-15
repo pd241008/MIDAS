@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from shadow.defense import midas_defense_forward
 
 def project_Lp_ball(x: torch.Tensor, x0: torch.Tensor, epsilon: float) -> torch.Tensor:
@@ -11,54 +12,66 @@ def project_Lp_ball(x: torch.Tensor, x0: torch.Tensor, epsilon: float) -> torch.
     res = x0 + diff
     return torch.clamp(res, min=0.0, max=1.0)
 
-def pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module, 
-               trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor, 
-               config: dict, alpha: float, epsilon: float, steps: int, naive: bool) -> torch.Tensor:
+def pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
+               trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor,
+               config: dict, alpha: float, epsilon: float, steps: int, naive: bool,
+               first_sample: bool = False) -> torch.Tensor:
     """
-    PGD adaptive/naive attack loop. 
+    PGD adaptive/naive attack loop with BCE loss against SmoothMockModel.
     If naive=True, the rotation angle `delta_theta` is detached from the computation graph.
     If naive=False, gradients flow backward entirely through delta_theta's magnitude.
+
+    Attack objective: maximize BCE(classifier(x_defended), y) where y is the natural label.
+    Success = model prediction flips after defense.
+
+    When first_sample=True, logs ||d(loss)/d(delta_theta)|| at every step for diagnostics.
     """
     x_t = x0.clone().detach()
     # Apply initial random perturbation
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0, epsilon)
-    
+
     for step in range(steps):
         x_t.requires_grad_(True)
-        
+
         # Clone window objects so we don't accidentally leak gradients across steps
-        # The window must not be differentiated through across steps (attacker doesn't control past history directly in this single-step PGD, though in a sequential attack they might. The harness tests single-step attack against a fixed window).
         window_cloned = [w.clone().detach() for w in trajectory_window]
-        
+
         x_defended, theta = midas_defense_forward(x_t, window_cloned, c_base, basis, config, naive=naive)
-        
+
         # We explicitly track theta to log its gradient
         if not naive:
             theta.retain_grad()
-            
-        loss = classifier(x_defended)
-        
+
+        pred = classifier(x_defended).clamp(1e-7, 1.0 - 1e-7)
+        loss = F.binary_cross_entropy(pred, y.expand_as(pred))
+
         loss.backward()
         grad = x_t.grad
-        
-        # Log theta grad for the first few steps to verify adaptive path is alive
-        if not naive and step < 3:
-            grad_theta_norm = torch.norm(theta.grad).item() if theta.grad is not None else 0.0
-            print(f"    [Step {step}] ||d(loss)/d(delta_theta)|| = {grad_theta_norm:.6f}")
-            
+
+        # Gradient-aliveness logging: ||d(loss)/d(delta_theta)||
+        if first_sample:
+            if not naive and theta.grad is not None:
+                grad_theta_norm = torch.norm(theta.grad).item()
+            else:
+                grad_theta_norm = 0.0
+            tag = "ADAPTIVE" if not naive else "NAIVE   "
+            print(f"    [{tag} Step {step:3d}] ||d(loss)/d(delta_theta)|| = {grad_theta_norm:.8f}  loss = {loss.item():.6f}")
+
         with torch.no_grad():
             x_t = x_t + alpha * torch.sign(grad)
             x_t = project_Lp_ball(x_t, x0, epsilon)
-            
+
     return x_t.detach()
 
-def adaptive_pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module, 
-                        trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor, 
-                        config: dict, alpha: float, epsilon: float, steps: int) -> torch.Tensor:
-    return pgd_attack(x0, y, classifier, trajectory_window, c_base, basis, config, alpha, epsilon, steps, naive=False)
+def adaptive_pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
+                        trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor,
+                        config: dict, alpha: float, epsilon: float, steps: int,
+                        first_sample: bool = False) -> torch.Tensor:
+    return pgd_attack(x0, y, classifier, trajectory_window, c_base, basis, config, alpha, epsilon, steps, naive=False, first_sample=first_sample)
 
-def naive_pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module, 
-                     trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor, 
-                     config: dict, alpha: float, epsilon: float, steps: int) -> torch.Tensor:
-    return pgd_attack(x0, y, classifier, trajectory_window, c_base, basis, config, alpha, epsilon, steps, naive=True)
+def naive_pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
+                     trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor,
+                     config: dict, alpha: float, epsilon: float, steps: int,
+                     first_sample: bool = False) -> torch.Tensor:
+    return pgd_attack(x0, y, classifier, trajectory_window, c_base, basis, config, alpha, epsilon, steps, naive=True, first_sample=first_sample)
