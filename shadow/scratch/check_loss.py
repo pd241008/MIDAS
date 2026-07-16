@@ -15,7 +15,7 @@ def test_attack():
     
     # We create a random dataset
     dataset = [torch.rand(D) for _ in range(50)]
-    trajectories = [[torch.rand(D) for _ in range(3)] for _ in range(50)]
+    trajectories = [[torch.randn(D) for _ in range(3)] for _ in range(50)]
     
     eps = 0.2
     alpha = 0.02
