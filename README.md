@@ -89,6 +89,23 @@ cargo run --bin edge -- all
 | [`edge-core`](./edge-core) | lib | Ring buffer, trajectory math (`compute_momentum`, `penetration_epsilon`), rotation math (`rotate_manifold_givens`, `project_to_manifold`, `budget_gated_rotation`), config deserialization |
 | [`edge`](./edge) | bin | Three-thread runtime, `InferenceModel` trait, `MockModel`/`TfliteModel`, attack harness (PGD, FGSM, C&W), CSV dataset loader, LaTeX-ready report writers |
 
+## Python Shadow Model (`shadow/`)
+
+A Python implementation of the defense is provided in the `shadow/` directory for rapid prototyping, gradient testing, and vulnerability analysis.
+
+### Key Components
+- **`defense.py`**: Python equivalent of the budget-gated Givens rotation defense.
+- **`run_attacks.py`**: Harness for running naive and adaptive PGD/FGSM attacks against the shadow model.
+- **`test_gradients.py`**: Verifies gradient flow through the defense mechanism.
+
+### Diagnostics & Trajectory Verification
+Several scripts are included to analyze the model's vulnerability and verify rotation trajectories:
+- **`diagnose_mlp.py`**: Vulnerability checks for MLP surrogates using PGD attacks, including saturation analysis.
+- **`probe_alpha001.py`**: Probes the effects of smaller step sizes (`alpha`) on adaptive vs. naive attack success rates.
+- **`diagnose_delta_theta.py`**: Analyzes the generated rotation angles (`delta_theta`).
+- **`verify_epsilon_p.py`**: Verifies penetration epsilon (`epsilon_p`) trajectories, cosine similarity distributions, and gamma placement.
+- **`check4_corrected.py`**: Corrected evaluation script for verifying trajectory generation.
+
 ## Configuration
 
 All hyperparameters from the paper are in [`configs/edge_config.json`](./configs/edge_config.json):
