@@ -152,3 +152,35 @@ class SmoothMockModel(torch.nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.sigmoid(x @ self.w - self.b)
+
+
+class SmoothMLPModel(torch.nn.Module):
+    """
+    Small, FIXED-WEIGHT (never trained) 2-layer MLP used only as an attack surrogate.
+    Introduces the local curvature a linear model structurally lacks, without
+    reopening the reproducibility concerns of a trainable model.
+
+    bias on the final layer is calibrated the same way as SmoothMockModel:
+    median of pre-activation scores over the calibration batch, so ~half the
+    pool sits near the decision boundary.
+    """
+    def __init__(self, d, hidden=16, calibration_batch=None, seed=1337):
+        super().__init__()
+        g = torch.Generator().manual_seed(seed)
+        self.fc1 = torch.nn.Linear(d, hidden)
+        self.fc2 = torch.nn.Linear(hidden, 1)
+        with torch.no_grad():
+            torch.nn.init.normal_(self.fc1.weight, generator=g)
+            torch.nn.init.normal_(self.fc1.bias, generator=g)
+            torch.nn.init.normal_(self.fc2.weight, generator=g)
+            if calibration_batch is not None:
+                pre_scores = torch.tanh(self.fc1(calibration_batch)) @ self.fc2.weight.T
+                self.fc2.bias.data.fill_(-pre_scores.median())
+            else:
+                self.fc2.bias.data.fill_(0.0)
+        for p in self.parameters():
+            p.requires_grad_(False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = torch.tanh(self.fc1(x))
+        return torch.sigmoid(self.fc2(h)).squeeze(-1)
