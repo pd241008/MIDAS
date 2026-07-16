@@ -140,7 +140,7 @@ def main():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.rand(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     print("\n--- Post-calibration confidence distribution (attack set) ---")
