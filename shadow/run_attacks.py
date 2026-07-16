@@ -174,7 +174,7 @@ def run_all_attacks():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.rand(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     # Post-calibration confidence distribution on the actual attack set
