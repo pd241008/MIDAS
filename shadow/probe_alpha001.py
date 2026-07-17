@@ -21,6 +21,7 @@ from shadow.scratch.debug_gradients import (
     midas_defense_forward_vulnerable,
     vulnerable_basis,
 )
+from shadow.save_results import save_results
 
 
 def project_Lp_ball(x, x0, epsilon):
@@ -267,6 +268,42 @@ def main():
     print(f"\n  Naive ASR:   {ref_asr_n:.2%} ({ref_naive_succ}/{N_SAMPLES})")
     print(f"  Adaptive ASR:{ref_asr_a:.2%} ({ref_adaptive_succ}/{N_SAMPLES})")
     print(f"  Gap:         {ref_gap:+.2%}")
+
+    # ---- Save results ----
+    saved_results = [
+        {
+            "update_rule": "sign",
+            "T": probe_T,
+            "epsilon": probe_eps,
+            "alpha": probe_alpha,
+            "label": "probe",
+            "naive_asr": asr_n,
+            "adaptive_asr": asr_a,
+            "n": N_SAMPLES,
+            "gap": gap,
+            "gap_se": se_gap,
+            "model": "SmoothMockModel",
+        },
+        {
+            "update_rule": "sign",
+            "T": 100,
+            "epsilon": probe_eps,
+            "alpha": 0.01,
+            "label": "reference",
+            "naive_asr": ref_asr_n,
+            "adaptive_asr": ref_asr_a,
+            "n": N_SAMPLES,
+            "gap": ref_gap,
+            "gap_se": 0,
+            "model": "SmoothMockModel",
+        },
+    ]
+    save_results(
+        script_name="probe_alpha001.py",
+        config=config,
+        results=saved_results,
+        extra={"model": "SmoothMockModel", "n_samples": N_SAMPLES},
+    )
 
 
 if __name__ == "__main__":

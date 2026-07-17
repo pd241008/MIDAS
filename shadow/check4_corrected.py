@@ -21,6 +21,7 @@ import torch.nn.functional as F
 
 from shadow.defense import SmoothMockModel, SmoothMLPModel, penetration_epsilon_windowed, rotation_angle
 from shadow.scratch.debug_gradients import vulnerable_basis
+from shadow.save_results import save_results
 
 
 def project_Lp_ball(x, x0, epsilon):
@@ -353,6 +354,33 @@ def main():
             if max_gap_se <= 1.0:
                 reasons.append(f"Gap/SE={max_gap_se:.2f} <= 1")
             print(f"    Reasons: {'; '.join(reasons)}")
+
+    # ---- Save results ----
+    config_export = {"W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
+                     "delta_theta_max_deg": 45.0, "tau": 0.3}
+    saved_results = []
+    for cls_name, results in [("SmoothMockModel", mock_results), ("SmoothMLPModel", mlp_results)]:
+        for name, r in results.items():
+            parts = name.split()
+            T_val = int(parts[0].split("=")[1])
+            eps_val = float(parts[1].split("=")[1])
+            saved_results.append({
+                "update_rule": "sign",
+                "T": T_val,
+                "epsilon": eps_val,
+                "naive_asr": r["naive"],
+                "adaptive_asr": r["adaptive"],
+                "n": 50,
+                "gap": r["gap"],
+                "gap_se": r.get("gap_se", 0),
+                "model": cls_name,
+            })
+    save_results(
+        script_name="check4_corrected.py",
+        config=config_export,
+        results=saved_results,
+        extra={"models": ["SmoothMockModel", "SmoothMLPModel"], "n_samples": 50},
+    )
 
 
 if __name__ == "__main__":
