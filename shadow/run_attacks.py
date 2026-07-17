@@ -29,10 +29,13 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0_init, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
+
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
-        x_def, theta_vuln = midas_defense_forward_vulnerable(x_t, window_cloned, c_base, config, naive=naive)
+        window_slice = sliding_window[-(W - 1):]
+        x_def, theta_vuln = midas_defense_forward_vulnerable(x_t, window_slice, c_base, config, naive=naive)
         if not naive:
             theta_vuln.retain_grad()
         pred = classifier(x_def).clamp(1e-7, 1.0 - 1e-7)
@@ -51,8 +54,10 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
         with torch.no_grad():
             x_t = x_t + alpha * torch.sign(grad)
             x_t = project_Lp_ball(x_t, x0_init, epsilon)
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach()
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), final_window
 
 
 def evaluate_attack_set(classifier, dataset, trajectories, c_base, basis, config,
@@ -78,33 +83,33 @@ def evaluate_attack_set(classifier, dataset, trajectories, c_base, basis, config
                 y_nat = (classifier(x0) > 0.5).float()
 
             if mode == "vuln":
-                x_adv_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                x_adv_n, win_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
                                     alpha, eps, steps, naive=True, first_sample_flag=is_first)
-                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
                 if (classifier(def_n) > 0.5).item() != y_nat.item():
                     naive_succ += 1
 
                 if is_first:
                     print()
-                x_adv_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                x_adv_a, win_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
                                     alpha, eps, steps, naive=False, first_sample_flag=is_first)
-                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
                 if (classifier(def_a) > 0.5).item() != y_nat.item():
                     adaptive_succ += 1
             else:
                 if is_first:
                     print("\n  --- Fixed Basis: Naive ---")
-                x_adv_n = naive_pgd_attack(x0, y_nat, classifier, traj, c_base, basis, config,
+                x_adv_n, win_n = naive_pgd_attack(x0, y_nat, classifier, traj, c_base, basis, config,
                                            alpha, eps, steps, first_sample=is_first)
-                def_n, _ = midas_defense_forward(x_adv_n, traj, c_base, basis, config, naive=False)
+                def_n, _ = midas_defense_forward(x_adv_n, win_n, c_base, basis, config, naive=False)
                 if (classifier(def_n) > 0.5).item() != y_nat.item():
                     naive_succ += 1
 
                 if is_first:
                     print("\n  --- Fixed Basis: Adaptive ---")
-                x_adv_a = adaptive_pgd_attack(x0, y_nat, classifier, traj, c_base, basis, config,
+                x_adv_a, win_a = adaptive_pgd_attack(x0, y_nat, classifier, traj, c_base, basis, config,
                                               alpha, eps, steps, first_sample=is_first)
-                def_a, _ = midas_defense_forward(x_adv_a, traj, c_base, basis, config, naive=False)
+                def_a, _ = midas_defense_forward(x_adv_a, win_a, c_base, basis, config, naive=False)
                 if (classifier(def_a) > 0.5).item() != y_nat.item():
                     adaptive_succ += 1
 
