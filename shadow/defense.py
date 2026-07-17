@@ -1,4 +1,7 @@
 import torch
+import torch.nn as nn
+import os
+import json
 
 def momentum(v_t: torch.Tensor, v_prev: torch.Tensor) -> torch.Tensor:
     """
@@ -101,7 +104,7 @@ def midas_defense_forward(x_t: torch.Tensor, trajectory_window: list[torch.Tenso
     `trajectory_window` includes previous x vectors up to x_{t-1}.
     Returns (x_defended, theta) so we can inspect gradients on theta.
     """
-    gamma = config.get("gamma", 0.5)
+    gamma = config.get("gamma", 0.292)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max_deg = config.get("delta_theta_max_deg", 45.0)
@@ -184,3 +187,137 @@ class SmoothMLPModel(torch.nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         h = torch.tanh(self.fc1(x))
         return torch.sigmoid(self.fc2(h)).squeeze(-1)
+
+
+class TrainedSurrogateModel(nn.Module):
+    """
+    Small feedforward classifier, briefly trained on synthetic separable data
+    to obtain real decision-boundary curvature. Used ONLY as an attack surrogate
+    in the adaptive-attacker harness.
+
+    All weights are frozen after training (requires_grad_(False)).
+    """
+    def __init__(self, d, hidden=16):
+        super().__init__()
+        self.fc1 = nn.Linear(d, hidden)
+        self.fc2 = nn.Linear(hidden, 1)
+
+    def forward(self, x):
+        return torch.sigmoid(self.fc2(torch.tanh(self.fc1(x)))).squeeze(-1)
+
+
+def generate_synthetic_data(n_samples=1000, d=10, seed=42):
+    """
+    Generate two-class synthetic data with real feature correlations.
+
+    Class 0: samples from N(mu0, Sigma) where Sigma has off-diagonal correlations.
+    Class 1: samples from N(mu1, Sigma) with a rotated mean.
+    The separating boundary is non-axis-aligned due to both the correlation
+    structure and the mean rotation.
+    """
+    rng = torch.Generator().manual_seed(seed)
+
+    # Shared covariance with off-diagonal correlations
+    # Start with identity, add structured correlations
+    A = torch.randn(d, d, generator=rng) * 0.3
+    Sigma = torch.eye(d) + A @ A.T
+    # Scale so diagonal is 1
+    D_diag = torch.sqrt(torch.diag(Sigma))
+    Sigma = Sigma / (D_diag.unsqueeze(0) * D_diag.unsqueeze(1))
+
+    # Class means: separated along a random direction, not axis-aligned
+    separation_dir = torch.randn(d, generator=rng)
+    separation_dir = separation_dir / torch.norm(separation_dir)
+    mu0 = -0.5 * separation_dir
+    mu1 = 0.5 * separation_dir
+
+    # Add per-class feature correlations via a random linear transform
+    W_transform = torch.randn(d, d, generator=rng) * 0.2 + torch.eye(d)
+
+    n_per_class = n_samples // 2
+    L = torch.linalg.cholesky(Sigma)
+
+    x0 = torch.randn(n_per_class, d, generator=rng) @ L.T + mu0
+    x1 = torch.randn(n_per_class, d, generator=rng) @ L.T + mu1
+
+    # Apply nonlinear feature correlation
+    x0 = x0 @ W_transform.T
+    x1 = x1 @ W_transform.T
+
+    X = torch.cat([x0, x1], dim=0)
+    y = torch.cat([torch.zeros(n_per_class), torch.ones(n_per_class)])
+
+    # Shuffle
+    perm = torch.randperm(n_samples, generator=rng)
+    X = X[perm]
+    y = y[perm]
+
+    return X, y
+
+
+def train_surrogate(d=10, hidden=16, seed=42, n_epochs=500, lr=0.01,
+                    n_train=1000, save_dir=None):
+    """
+    Train a TrainedSurrogateModel on synthetic data, freeze weights, optionally save.
+    Returns (model, training_log).
+    """
+    torch.manual_seed(seed)
+    X, y = generate_synthetic_data(n_samples=n_train, d=d, seed=seed)
+
+    model = TrainedSurrogateModel(d, hidden=hidden)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    loss_fn = nn.BCELoss()
+
+    log = {"losses": [], "accuracies": []}
+    for epoch in range(n_epochs):
+        model.train()
+        pred = model(X)
+        loss = loss_fn(pred, y)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        with torch.no_grad():
+            acc = ((pred > 0.5).float() == y).float().mean().item()
+        log["losses"].append(loss.item())
+        log["accuracies"].append(acc)
+
+        if (epoch + 1) % 100 == 0:
+            print(f"  Epoch {epoch+1:4d}: loss={loss.item():.4f}  acc={acc:.2%}")
+
+    # Freeze all weights
+    for p in model.parameters():
+        p.requires_grad_(False)
+
+    final_acc = log["accuracies"][-1]
+    print(f"  Training complete: final accuracy = {final_acc:.2%}")
+
+    # Save to disk
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+        weights_path = os.path.join(save_dir, "trained_surrogate.pt")
+        torch.save(model.state_dict(), weights_path)
+        meta = {
+            "d": d, "hidden": hidden, "seed": seed,
+            "n_epochs": n_epochs, "lr": lr, "n_train": n_train,
+            "final_accuracy": final_acc,
+            "arch": "TrainedSurrogateModel",
+        }
+        meta_path = os.path.join(save_dir, "trained_surrogate_meta.json")
+        with open(meta_path, "w") as f:
+            json.dump(meta, f, indent=2)
+        print(f"  Saved to {weights_path}")
+        print(f"  Meta saved to {meta_path}")
+
+    return model, log
+
+
+def load_surrogate(d=10, hidden=16, weights_path=None):
+    """Load a pre-trained TrainedSurrogateModel from disk."""
+    model = TrainedSurrogateModel(d, hidden=hidden)
+    if weights_path is None:
+        weights_path = os.path.join(os.path.dirname(__file__), "trained_surrogate.pt")
+    model.load_state_dict(torch.load(weights_path, weights_only=True))
+    for p in model.parameters():
+        p.requires_grad_(False)
+    return model

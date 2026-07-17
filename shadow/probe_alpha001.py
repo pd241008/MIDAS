@@ -21,6 +21,7 @@ from shadow.scratch.debug_gradients import (
     midas_defense_forward_vulnerable,
     vulnerable_basis,
 )
+from shadow.save_results import save_results
 
 
 def project_Lp_ball(x, x0, epsilon):
@@ -36,14 +37,16 @@ def pgd_probe(x0_init, y_target, classifier, traj, c_base, config,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0_init, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
     step_logs = []
     saturate_step = None  # first step where ||delta_x||_inf >= 0.99 * epsilon
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta_vuln = midas_defense_forward_vulnerable(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta_vuln.retain_grad()
@@ -82,8 +85,10 @@ def pgd_probe(x0_init, y_target, classifier, traj, c_base, config,
 
         with torch.no_grad():
             x_t = x_t_adv
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach(), step_logs, saturate_step
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), step_logs, saturate_step, final_window
 
 
 def main():
@@ -97,7 +102,7 @@ def main():
     c_base = torch.tensor(basis_data["c_base"], dtype=torch.float32)
 
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
         "sla_budget_ms": 10, "channel_capacity": 4,
     }
@@ -127,7 +132,7 @@ def main():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     # ================================================================
@@ -151,26 +156,26 @@ def main():
             y_nat = (classifier(x0) > 0.5).float()
 
         # Naive
-        x_adv_n, logs_n, sat_n = pgd_probe(
+        x_adv_n, logs_n, sat_n, win_n = pgd_probe(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=True, sample_idx=i, log_steps=(i == 0)
         )
         if sat_n is not None:
             naive_saturate_steps.append(sat_n)
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 naive_succ += 1
 
         # Adaptive
-        x_adv_a, logs_a, sat_a = pgd_probe(
+        x_adv_a, logs_a, sat_a, win_a = pgd_probe(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=False, sample_idx=i, log_steps=(i == 0)
         )
         if sat_a is not None:
             adaptive_saturate_steps.append(sat_a)
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 adaptive_succ += 1
 
@@ -238,21 +243,21 @@ def main():
         with torch.no_grad():
             y_nat = (classifier(x0) > 0.5).float()
 
-        x_adv_n, _, _ = pgd_probe(
+        x_adv_n, _, _, win_n = pgd_probe(
             x0, y_nat, classifier, traj, c_base, config,
             ref_alpha, probe_eps, ref_T, naive=True, sample_idx=i, log_steps=(i == 0)
         )
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 ref_naive_succ += 1
 
-        x_adv_a, _, _ = pgd_probe(
+        x_adv_a, _, _, win_a = pgd_probe(
             x0, y_nat, classifier, traj, c_base, config,
             ref_alpha, probe_eps, ref_T, naive=False, sample_idx=i, log_steps=(i == 0)
         )
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 ref_adaptive_succ += 1
 
@@ -263,6 +268,42 @@ def main():
     print(f"\n  Naive ASR:   {ref_asr_n:.2%} ({ref_naive_succ}/{N_SAMPLES})")
     print(f"  Adaptive ASR:{ref_asr_a:.2%} ({ref_adaptive_succ}/{N_SAMPLES})")
     print(f"  Gap:         {ref_gap:+.2%}")
+
+    # ---- Save results ----
+    saved_results = [
+        {
+            "update_rule": "sign",
+            "T": probe_T,
+            "epsilon": probe_eps,
+            "alpha": probe_alpha,
+            "label": "probe",
+            "naive_asr": asr_n,
+            "adaptive_asr": asr_a,
+            "n": N_SAMPLES,
+            "gap": gap,
+            "gap_se": se_gap,
+            "model": "SmoothMockModel",
+        },
+        {
+            "update_rule": "sign",
+            "T": 100,
+            "epsilon": probe_eps,
+            "alpha": 0.01,
+            "label": "reference",
+            "naive_asr": ref_asr_n,
+            "adaptive_asr": ref_asr_a,
+            "n": N_SAMPLES,
+            "gap": ref_gap,
+            "gap_se": 0,
+            "model": "SmoothMockModel",
+        },
+    ]
+    save_results(
+        script_name="probe_alpha001.py",
+        config=config,
+        results=saved_results,
+        extra={"model": "SmoothMockModel", "n_samples": N_SAMPLES},
+    )
 
 
 if __name__ == "__main__":
