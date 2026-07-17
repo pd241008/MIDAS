@@ -22,7 +22,7 @@ def project_Lp_ball(x, x0, epsilon):
 
 def midas_defense_forward_vulnerable_with_eps_p(x_t, trajectory_window, c_base, config, naive=False):
     """Same as vulnerable forward pass but also returns epsilon_p."""
-    gamma = config.get("gamma", 0.5)
+    gamma = config.get("gamma", 0.292)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max = config.get("delta_theta_max_deg", 45.0) * (3.141592653589793 / 180.0)
@@ -55,12 +55,14 @@ def pgd_with_delta_theta_logging(x0_init, y_target, classifier, traj, c_base, co
     print(f"  {'step':>4s}  {'theta_deg':>10s}  {'theta_rad':>10s}  {'eps_p':>10s}  {'loss':>10s}  {'||dL/dx||':>10s}  {'||dL/dθ||':>10s}")
 
     step_data = []
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta, eps_p = midas_defense_forward_vulnerable_with_eps_p(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta.retain_grad()
@@ -96,6 +98,7 @@ def pgd_with_delta_theta_logging(x0_init, y_target, classifier, traj, c_base, co
         with torch.no_grad():
             x_t = x_t + alpha * torch.sign(grad)
             x_t = project_Lp_ball(x_t, x0_init, epsilon)
+            sliding_window.append(x_t.clone().detach())
 
     theta_vals = [d["theta_deg"] for d in step_data]
     eps_p_vals = [d["eps_p"] for d in step_data]
@@ -118,7 +121,7 @@ def make_dataset(D, seed=42):
 
 def main():
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
     }
     D = config["D"]
@@ -170,7 +173,7 @@ def main():
         filtered = [pool[i] for i in range(len(pool)) if keep_mask[i]]
 
     dataset = filtered[:50]
-    trajectories = [[torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(50)]
+    trajectories = [[torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(50)]
 
     # Sample 0, eps=0.1, T=100
     x0 = dataset[0]

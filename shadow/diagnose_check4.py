@@ -18,6 +18,7 @@ from shadow.scratch.debug_gradients import (
     midas_defense_forward_vulnerable,
     vulnerable_basis,
 )
+from shadow.save_results import save_results
 
 
 def log_confidence_distribution(classifier, samples, label=""):
@@ -46,13 +47,15 @@ def pgd_vuln_diagnostic(x0_init, y_target, classifier, traj, c_base, config,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0_init, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
     step_logs = []
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta_vuln = midas_defense_forward_vulnerable(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta_vuln.retain_grad()
@@ -88,8 +91,10 @@ def pgd_vuln_diagnostic(x0_init, y_target, classifier, traj, c_base, config,
 
         with torch.no_grad():
             x_t = x_t_adv
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach(), step_logs
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), step_logs, final_window
 
 
 def main():
@@ -103,7 +108,7 @@ def main():
     c_base = torch.tensor(basis_data["c_base"], dtype=torch.float32)
 
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
         "sla_budget_ms": 10, "channel_capacity": 4,
     }
@@ -140,7 +145,7 @@ def main():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     print("\n--- Post-calibration confidence distribution (attack set) ---")
@@ -175,22 +180,22 @@ def main():
                 y_nat = (classifier(x0) > 0.5).float()
 
             # Naive
-            x_adv_n, _ = pgd_vuln_diagnostic(
+            x_adv_n, _, win_n = pgd_vuln_diagnostic(
                 x0, y_nat, classifier, traj, c_base, config,
                 alpha, eps, steps, naive=True, sample_idx=i, log_steps=False
             )
             with torch.no_grad():
-                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
                 if (classifier(def_n) > 0.5).item() != y_nat.item():
                     naive_succ += 1
 
             # Adaptive
-            x_adv_a, _ = pgd_vuln_diagnostic(
+            x_adv_a, _, win_a = pgd_vuln_diagnostic(
                 x0, y_nat, classifier, traj, c_base, config,
                 alpha, eps, steps, naive=False, sample_idx=i, log_steps=False
             )
             with torch.no_grad():
-                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
                 if (classifier(def_a) > 0.5).item() != y_nat.item():
                     adaptive_succ += 1
 
@@ -214,13 +219,13 @@ def main():
 
     for eps_label, eps in [("eps=0.2", 0.2), ("eps=0.05", 0.05)]:
         print(f"\n--- T=100, {eps_label}, NAIVE ---")
-        _, naive_logs = pgd_vuln_diagnostic(
+        _, naive_logs, _ = pgd_vuln_diagnostic(
             x0, y_nat, classifier, traj, c_base, config,
             0.01, eps, 100, naive=True, sample_idx=0, log_steps=True
         )
 
         print(f"\n--- T=100, {eps_label}, ADAPTIVE ---")
-        _, adapt_logs = pgd_vuln_diagnostic(
+        _, adapt_logs, _ = pgd_vuln_diagnostic(
             x0, y_nat, classifier, traj, c_base, config,
             0.01, eps, 100, naive=False, sample_idx=0, log_steps=True
         )
@@ -234,7 +239,7 @@ def main():
 
     for eps_label, eps in [("eps=0.05", 0.05), ("eps=0.1", 0.1), ("eps=0.2", 0.2)]:
         print(f"\n--- {eps_label}, ADAPTIVE ---")
-        _, logs = pgd_vuln_diagnostic(
+        _, logs, _ = pgd_vuln_diagnostic(
             x0, y_nat, classifier, traj, c_base, config,
             0.01, eps, 100, naive=False, sample_idx=0, log_steps=False
         )
@@ -260,6 +265,30 @@ def main():
     else:
         print(f"  GATE: FAILED (no config exceeds 2% gap)")
     print(f"  Qualitative assessment: {'Real gap' if abs(max_gap) > 0.05 else 'Marginal or absent gap'}")
+
+    # ---- Save results ----
+    saved_results = []
+    for name, r in results.items():
+        parts = name.split()
+        T_val = int(parts[0].split("=")[1])
+        eps_val = float(parts[1].split("=")[1])
+        saved_results.append({
+            "update_rule": "sign",
+            "T": T_val,
+            "epsilon": eps_val,
+            "naive_asr": r["naive"],
+            "adaptive_asr": r["adaptive"],
+            "n": N_SAMPLES,
+            "gap": r["gap"],
+            "gap_se": r.get("gap_se", 0),
+            "model": "SmoothMockModel",
+        })
+    save_results(
+        script_name="diagnose_check4.py",
+        config=config,
+        results=saved_results,
+        extra={"model": "SmoothMockModel", "n_samples": N_SAMPLES},
+    )
 
 
 if __name__ == "__main__":

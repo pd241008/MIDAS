@@ -15,6 +15,7 @@ from shadow.scratch.debug_gradients import (
     midas_defense_forward_vulnerable,
     vulnerable_basis,
 )
+from shadow.save_results import save_results
 
 
 def project_Lp_ball(x, x0, epsilon):
@@ -30,14 +31,16 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0_init, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
     step_logs = []
     saturate_step = None
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta_vuln = midas_defense_forward_vulnerable(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta_vuln.retain_grad()
@@ -75,8 +78,10 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
 
         with torch.no_grad():
             x_t = x_t_adv
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach(), step_logs, saturate_step
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), step_logs, saturate_step, final_window
 
 
 def make_dataset(D, seed=42):
@@ -103,7 +108,7 @@ def make_dataset(D, seed=42):
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.randn(D) for _ in range(3)] for _ in range(N_SAMPLES)
+        [torch.rand(D) - 0.5 for _ in range(3)] for _ in range(N_SAMPLES)
     ]
 
     return classifier, dataset, trajectories, N_SAMPLES
@@ -120,7 +125,7 @@ def log_confidence(classifier, samples, label=""):
 
 def main():
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
         "sla_budget_ms": 10, "channel_capacity": 4,
     }
@@ -165,17 +170,17 @@ def main():
             with torch.no_grad():
                 y_nat = (classifier(x0) > 0.5).float()
 
-            x_adv_n, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                      alpha, eps, steps, naive=True, log_steps=False)
+            x_adv_n, _, _, win_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                       alpha, eps, steps, naive=True, log_steps=False)
             with torch.no_grad():
-                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
                 if (classifier(def_n) > 0.5).item() != y_nat.item():
                     naive_succ += 1
 
-            x_adv_a, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                      alpha, eps, steps, naive=False, log_steps=False)
+            x_adv_a, _, _, win_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                       alpha, eps, steps, naive=False, log_steps=False)
             with torch.no_grad():
-                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
                 if (classifier(def_a) > 0.5).item() != y_nat.item():
                     adaptive_succ += 1
 
@@ -220,7 +225,7 @@ def main():
 
     for eps_label, eps in [("eps=0.05", 0.05), ("eps=0.1", 0.1), ("eps=0.2", 0.2)]:
         print(f"\n--- {eps_label}, ADAPTIVE ---")
-        _, logs, sat = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+        _, logs, sat, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
                                 0.01, eps, 100, naive=False, log_steps=False)
         key_steps = [0, 4, 9, 19, 49, 99]
         for s in key_steps:
@@ -273,23 +278,23 @@ def main():
         with torch.no_grad():
             y_nat = (classifier(x0) > 0.5).float()
 
-        x_adv_n, logs_n, sat_n = pgd_vuln(
+        x_adv_n, logs_n, sat_n, win_n = pgd_vuln(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=True, log_steps=(i == 0))
         if sat_n is not None:
             naive_sat_steps.append(sat_n)
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 naive_succ += 1
 
-        x_adv_a, logs_a, sat_a = pgd_vuln(
+        x_adv_a, logs_a, sat_a, win_a = pgd_vuln(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=False, log_steps=(i == 0))
         if sat_a is not None:
             adaptive_sat_steps.append(sat_a)
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 adaptive_succ += 1
 
@@ -344,17 +349,17 @@ def main():
         with torch.no_grad():
             y_nat = (classifier(x0) > 0.5).float()
 
-        x_adv_n, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                  0.01, probe_eps, 100, naive=True, log_steps=False)
+        x_adv_n, _, _, win_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                   0.01, probe_eps, 100, naive=True, log_steps=False)
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 ref_naive_succ += 1
 
-        x_adv_a, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                  0.01, probe_eps, 100, naive=False, log_steps=False)
+        x_adv_a, _, _, win_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                   0.01, probe_eps, 100, naive=False, log_steps=False)
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 ref_adaptive_succ += 1
 
@@ -365,6 +370,30 @@ def main():
     print(f"  Naive ASR:    {ref_asr_n:.2%} ({ref_naive_succ}/{N_SAMPLES})")
     print(f"  Adaptive ASR: {ref_asr_a:.2%} ({ref_adaptive_succ}/{N_SAMPLES})")
     print(f"  Gap:          {ref_gap:+.2%}")
+
+    # ---- Save results ----
+    saved_results = []
+    for name, r in results.items():
+        parts = name.split()
+        T_val = int(parts[0].split("=")[1])
+        eps_val = float(parts[1].split("=")[1])
+        saved_results.append({
+            "update_rule": "sign",
+            "T": T_val,
+            "epsilon": eps_val,
+            "naive_asr": r["naive"],
+            "adaptive_asr": r["adaptive"],
+            "n": N_SAMPLES,
+            "gap": r["gap"],
+            "gap_se": r.get("gap_se", 0),
+            "model": "SmoothMLPModel",
+        })
+    save_results(
+        script_name="diagnose_mlp.py",
+        config=config,
+        results=saved_results,
+        extra={"model": "SmoothMLPModel", "n_samples": N_SAMPLES},
+    )
 
 
 if __name__ == "__main__":
