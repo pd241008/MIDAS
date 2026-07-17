@@ -97,7 +97,7 @@ def main():
     c_base = torch.tensor(basis_data["c_base"], dtype=torch.float32)
 
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
         "sla_budget_ms": 10, "channel_capacity": 4,
     }
@@ -127,7 +127,7 @@ def main():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     # ================================================================

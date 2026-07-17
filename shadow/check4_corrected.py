@@ -2,8 +2,9 @@
 Check #4 — Corrected trajectory generation + recalibrated gamma.
 
 Changes from prior rounds:
-1. Trajectory vectors: torch.randn(D) (zero-mean, satisfying Clean Traffic Axiom)
-2. gamma recalibrated to 95th pct of corrected epsilon_p distribution (1.05)
+1. Pool points: torch.rand(D) (in [0,1]^D, so project_Lp_ball clamping is a no-op)
+2. Trajectory vectors: torch.rand(D) - 0.5 (zero-mean, satisfying Clean Traffic Axiom)
+3. gamma = 0.292 (95th pct of corrected epsilon_p distribution)
 
 Runs:
   A. Phase transition confirmation (delta_theta trace, sample 0)
@@ -29,7 +30,7 @@ def project_Lp_ball(x, x0, epsilon):
 
 
 def midas_defense_forward_vulnerable_with_eps_p(x_t, trajectory_window, c_base, config, naive=False):
-    gamma = config.get("gamma", 1.05)
+    gamma = config.get("gamma", 0.292)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max = config.get("delta_theta_max_deg", 45.0) * (3.141592653589793 / 180.0)
@@ -131,7 +132,7 @@ def run_check4_for_classifier(classifier_name, classifier, pool, config, D, N_SA
     print(f"\n  Pool: {len(pool)} → After filter: {len(filtered)} → Using: {N_SAMPLES}")
     assert len(filtered) >= N_SAMPLES, f"Only {len(filtered)} survive"
     dataset = filtered[:N_SAMPLES]
-    trajectories = [[torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)]
+    trajectories = [[torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)]
 
     # ---- PART A: Phase transition confirmation ----
     print(f"\n{'='*70}")
@@ -218,20 +219,21 @@ def main():
     torch.manual_seed(42)
     D = 10
 
-    # Recalibrated config: gamma = 95th pct of corrected epsilon_p distribution
+    # Recalibrated config: gamma = 95th pct of corrected epsilon_p distribution (0.292)
     config = {
-        "W": 4, "D": D, "gamma": 1.05, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": D, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
     }
 
     print("=" * 70)
     print("CHECK #4 — CORRECTED TRAJECTORY GENERATION")
     print("=" * 70)
-    print(f"\n  gamma:       {config['gamma']}  (recalibrated to 95th pct of corrected εp)")
+    print(f"\n  gamma:       {config['gamma']}  (95th pct of corrected εp distribution)")
     print(f"  lambda:      {config['lambda']}")
     print(f"  k:           {config['k']}")
     print(f"  θ_max:       {config['delta_theta_max_deg']}°")
-    print(f"  Trajectory:  torch.randn(D)  (zero-mean, Clean Traffic Axiom)")
+    print(f"  Pool:        torch.rand(D)  (in [0,1]^D, clamping no-op)")
+    print(f"  Trajectory:  torch.rand(D)-0.5  (zero-mean, Clean Traffic Axiom)")
 
     pool, calibration_batch = make_dataset(D)
 

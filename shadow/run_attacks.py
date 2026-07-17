@@ -132,7 +132,7 @@ def run_all_attacks():
     config = {
         "W": 4,
         "D": 10,
-        "gamma": 0.5,
+        "gamma": 0.292,
         "lambda": 1.0,
         "k": 2.0,
         "delta_theta_max_deg": 45.0,
@@ -174,7 +174,7 @@ def run_all_attacks():
 
     dataset = filtered[:N_SAMPLES]
     trajectories = [
-        [torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
+        [torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(N_SAMPLES)
     ]
 
     # Post-calibration confidence distribution on the actual attack set

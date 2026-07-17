@@ -31,7 +31,7 @@ def vulnerable_basis(x_t: torch.Tensor, c_base: torch.Tensor) -> torch.Tensor:
     return torch.stack([b0, b1])
 
 def midas_defense_forward_vulnerable(x_t: torch.Tensor, trajectory_window: list[torch.Tensor], c_base: torch.Tensor, config: dict, naive: bool = False) -> torch.Tensor:
-    gamma = config.get("gamma", 0.5)
+    gamma = config.get("gamma", 1.05)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max = config.get("delta_theta_max_deg", 45.0) * (3.141592653589793 / 180.0)
@@ -55,7 +55,7 @@ def midas_defense_forward_vulnerable(x_t: torch.Tensor, trajectory_window: list[
 def debug():
     torch.manual_seed(42)
     D = 10
-    config = {"W": 4, "D": D, "gamma": 0.5, "lambda": 1.0, "k": 2.0, "delta_theta_max_deg": 45.0}
+    config = {"W": 4, "D": D, "gamma": 1.05, "lambda": 1.0, "k": 2.0, "delta_theta_max_deg": 45.0}
     c_base = torch.zeros(D)
     window = [torch.randn(D) for _ in range(config["W"] - 1)]
     x_t = torch.randn(D, requires_grad=True)
