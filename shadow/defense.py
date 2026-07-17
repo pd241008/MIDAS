@@ -101,7 +101,7 @@ def midas_defense_forward(x_t: torch.Tensor, trajectory_window: list[torch.Tenso
     `trajectory_window` includes previous x vectors up to x_{t-1}.
     Returns (x_defended, theta) so we can inspect gradients on theta.
     """
-    gamma = config.get("gamma", 0.5)
+    gamma = config.get("gamma", 0.292)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max_deg = config.get("delta_theta_max_deg", 45.0)

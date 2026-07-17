@@ -5,7 +5,7 @@ After fixing trajectory vectors from torch.rand(D) to torch.randn(D),
 check that:
 1. Cosine similarity M_t averages near 0 (Clean Traffic Axiom)
 2. epsilon_p distribution is reasonable
-3. gamma=0.5 is well-placed or needs recalibration
+3. gamma=0.292 is well-placed (95th pct of corrected eps_p)
 """
 import math
 import torch
@@ -20,7 +20,7 @@ def main():
     N_PAIRS_PER_TRAJ = W - 1  # 3 pairs per trajectory window
 
     print("=" * 70)
-    print("VERIFICATION: Corrected trajectory generation (torch.randn)")
+    print("VERIFICATION: Corrected trajectory generation (torch.rand(D) - 0.5)")
     print("=" * 70)
 
     # ---- Collect M_t and epsilon_p over many independent trajectories ----
@@ -28,7 +28,7 @@ def main():
     all_epsilon_p_values = []
 
     for _ in range(N_TRAJECTORIES):
-        window = [torch.randn(D) for _ in range(W)]
+        window = [torch.rand(D) - 0.5 for _ in range(W)]
         eps_p = penetration_epsilon_windowed(window)
         all_epsilon_p_values.append(eps_p.item())
 
@@ -64,7 +64,7 @@ def main():
         print(f"  {pct}th percentile: {val:.6f}")
 
     # ---- Gamma placement analysis ----
-    gamma = 0.5
+    gamma = 0.292
     p95 = torch.quantile(all_epsilon_p_values, 0.95).item()
     p90 = torch.quantile(all_epsilon_p_values, 0.90).item()
     frac_below_gamma = (all_epsilon_p_values <= gamma).float().mean().item()
@@ -111,7 +111,7 @@ def main():
     print(f"  95th pct theta: {torch.quantile(thetas_deg, 0.95):.4f} deg")
 
     # ---- Also test with the OLD generator for comparison ----
-    print(f"\n--- COMPARISON: Old generator (torch.rand) ---")
+    print(f"\n--- COMPARISON: Old generator (torch.rand, no centering) ---")
     old_momentum = []
     old_epsilon_p = []
     for _ in range(1000):
@@ -128,6 +128,25 @@ def main():
     print(f"  Old eps_p mean:    {old_epsilon_p.mean():.6f}")
     print(f"  Old eps_p 95th:    {torch.quantile(old_epsilon_p, 0.95):.6f}")
     print(f"  Old frac > gamma:  {(old_epsilon_p > gamma).float().mean():.2%}")
+
+    print(f"\n--- COMPARISON: Previous fix (torch.randn, breaks clamping) ---")
+    randn_momentum = []
+    randn_epsilon_p = []
+    for _ in range(1000):
+        window = [torch.randn(D) for _ in range(W)]
+        eps_p = penetration_epsilon_windowed(window)
+        randn_epsilon_p.append(eps_p.item())
+        for i in range(len(window) - 1):
+            m = momentum(window[i + 1], window[i])
+            randn_momentum.append(m.item())
+
+    randn_momentum = torch.tensor(randn_momentum)
+    randn_epsilon_p = torch.tensor(randn_epsilon_p)
+    print(f"  randn M_t mean:    {randn_momentum.mean():.6f}  (zero-mean vectors)")
+    print(f"  randn eps_p mean:  {randn_epsilon_p.mean():.6f}")
+    print(f"  randn eps_p 95th:  {torch.quantile(randn_epsilon_p, 0.95):.6f}")
+    print(f"  NOTE: randn breaks because project_Lp_ball clamps to [0,1],")
+    print(f"        making x_t non-negative while traj vectors stay in R^D.")
 
 
 if __name__ == "__main__":

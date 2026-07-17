@@ -22,7 +22,7 @@ def project_Lp_ball(x, x0, epsilon):
 
 def midas_defense_forward_vulnerable_with_eps_p(x_t, trajectory_window, c_base, config, naive=False):
     """Same as vulnerable forward pass but also returns epsilon_p."""
-    gamma = config.get("gamma", 0.5)
+    gamma = config.get("gamma", 0.292)
     lambda_ = config.get("lambda", 1.0)
     k = config.get("k", 2.0)
     delta_theta_max = config.get("delta_theta_max_deg", 45.0) * (3.141592653589793 / 180.0)
@@ -118,7 +118,7 @@ def make_dataset(D, seed=42):
 
 def main():
     config = {
-        "W": 4, "D": 10, "gamma": 0.5, "lambda": 1.0, "k": 2.0,
+        "W": 4, "D": 10, "gamma": 0.292, "lambda": 1.0, "k": 2.0,
         "delta_theta_max_deg": 45.0, "tau": 0.3,
     }
     D = config["D"]
@@ -170,7 +170,7 @@ def main():
         filtered = [pool[i] for i in range(len(pool)) if keep_mask[i]]
 
     dataset = filtered[:50]
-    trajectories = [[torch.randn(D) for _ in range(config["W"] - 1)] for _ in range(50)]
+    trajectories = [[torch.rand(D) - 0.5 for _ in range(config["W"] - 1)] for _ in range(50)]
 
     # Sample 0, eps=0.1, T=100
     x0 = dataset[0]
