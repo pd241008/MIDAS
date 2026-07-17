@@ -31,13 +31,14 @@ def pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in trajectory_window]
+
     for step in range(steps):
         x_t.requires_grad_(True)
 
-        # Clone window objects so we don't accidentally leak gradients across steps
-        window_cloned = [w.clone().detach() for w in trajectory_window]
-
-        x_defended, theta = midas_defense_forward(x_t, window_cloned, c_base, basis, config, naive=naive)
+        window_slice = sliding_window[-(W - 1):]
+        x_defended, theta = midas_defense_forward(x_t, window_slice, c_base, basis, config, naive=naive)
 
         # We explicitly track theta to log its gradient
         if not naive:
@@ -61,8 +62,10 @@ def pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
         with torch.no_grad():
             x_t = x_t + alpha * torch.sign(grad)
             x_t = project_Lp_ball(x_t, x0, epsilon)
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach()
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), final_window
 
 def adaptive_pgd_attack(x0: torch.Tensor, y: torch.Tensor, classifier: torch.nn.Module,
                         trajectory_window: list[torch.Tensor], c_base: torch.Tensor, basis: torch.Tensor,

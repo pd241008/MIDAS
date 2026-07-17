@@ -55,12 +55,14 @@ def pgd_with_delta_theta_logging(x0_init, y_target, classifier, traj, c_base, co
     print(f"  {'step':>4s}  {'theta_deg':>10s}  {'theta_rad':>10s}  {'eps_p':>10s}  {'loss':>10s}  {'||dL/dx||':>10s}  {'||dL/dθ||':>10s}")
 
     step_data = []
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta, eps_p = midas_defense_forward_vulnerable_with_eps_p(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta.retain_grad()
@@ -96,6 +98,7 @@ def pgd_with_delta_theta_logging(x0_init, y_target, classifier, traj, c_base, co
         with torch.no_grad():
             x_t = x_t + alpha * torch.sign(grad)
             x_t = project_Lp_ball(x_t, x0_init, epsilon)
+            sliding_window.append(x_t.clone().detach())
 
     theta_vals = [d["theta_deg"] for d in step_data]
     eps_p_vals = [d["eps_p"] for d in step_data]

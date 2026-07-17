@@ -30,14 +30,16 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
     x_t = x_t + torch.empty_like(x_t).uniform_(-epsilon, epsilon)
     x_t = project_Lp_ball(x_t, x0_init, epsilon)
 
+    W = config.get("W", 4)
+    sliding_window = [w.clone().detach() for w in traj]
     step_logs = []
     saturate_step = None
 
     for step in range(steps):
         x_t.requires_grad_(True)
-        window_cloned = [w.clone().detach() for w in traj]
+        window_slice = sliding_window[-(W - 1):]
         x_def, theta_vuln = midas_defense_forward_vulnerable(
-            x_t, window_cloned, c_base, config, naive=naive
+            x_t, window_slice, c_base, config, naive=naive
         )
         if not naive:
             theta_vuln.retain_grad()
@@ -75,8 +77,10 @@ def pgd_vuln(x0_init, y_target, classifier, traj, c_base, config,
 
         with torch.no_grad():
             x_t = x_t_adv
+            sliding_window.append(x_t.clone().detach())
 
-    return x_t.detach(), step_logs, saturate_step
+    final_window = sliding_window[-(W - 1):]
+    return x_t.detach(), step_logs, saturate_step, final_window
 
 
 def make_dataset(D, seed=42):
@@ -165,17 +169,17 @@ def main():
             with torch.no_grad():
                 y_nat = (classifier(x0) > 0.5).float()
 
-            x_adv_n, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                      alpha, eps, steps, naive=True, log_steps=False)
+            x_adv_n, _, _, win_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                       alpha, eps, steps, naive=True, log_steps=False)
             with torch.no_grad():
-                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+                def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
                 if (classifier(def_n) > 0.5).item() != y_nat.item():
                     naive_succ += 1
 
-            x_adv_a, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                      alpha, eps, steps, naive=False, log_steps=False)
+            x_adv_a, _, _, win_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                       alpha, eps, steps, naive=False, log_steps=False)
             with torch.no_grad():
-                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+                def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
                 if (classifier(def_a) > 0.5).item() != y_nat.item():
                     adaptive_succ += 1
 
@@ -220,7 +224,7 @@ def main():
 
     for eps_label, eps in [("eps=0.05", 0.05), ("eps=0.1", 0.1), ("eps=0.2", 0.2)]:
         print(f"\n--- {eps_label}, ADAPTIVE ---")
-        _, logs, sat = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+        _, logs, sat, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
                                 0.01, eps, 100, naive=False, log_steps=False)
         key_steps = [0, 4, 9, 19, 49, 99]
         for s in key_steps:
@@ -273,23 +277,23 @@ def main():
         with torch.no_grad():
             y_nat = (classifier(x0) > 0.5).float()
 
-        x_adv_n, logs_n, sat_n = pgd_vuln(
+        x_adv_n, logs_n, sat_n, win_n = pgd_vuln(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=True, log_steps=(i == 0))
         if sat_n is not None:
             naive_sat_steps.append(sat_n)
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 naive_succ += 1
 
-        x_adv_a, logs_a, sat_a = pgd_vuln(
+        x_adv_a, logs_a, sat_a, win_a = pgd_vuln(
             x0, y_nat, classifier, traj, c_base, config,
             probe_alpha, probe_eps, probe_T, naive=False, log_steps=(i == 0))
         if sat_a is not None:
             adaptive_sat_steps.append(sat_a)
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 adaptive_succ += 1
 
@@ -344,17 +348,17 @@ def main():
         with torch.no_grad():
             y_nat = (classifier(x0) > 0.5).float()
 
-        x_adv_n, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                  0.01, probe_eps, 100, naive=True, log_steps=False)
+        x_adv_n, _, _, win_n = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                   0.01, probe_eps, 100, naive=True, log_steps=False)
         with torch.no_grad():
-            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, traj, c_base, config, naive=False)
+            def_n, _ = midas_defense_forward_vulnerable(x_adv_n, win_n, c_base, config, naive=False)
             if (classifier(def_n) > 0.5).item() != y_nat.item():
                 ref_naive_succ += 1
 
-        x_adv_a, _, _ = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
-                                  0.01, probe_eps, 100, naive=False, log_steps=False)
+        x_adv_a, _, _, win_a = pgd_vuln(x0, y_nat, classifier, traj, c_base, config,
+                                   0.01, probe_eps, 100, naive=False, log_steps=False)
         with torch.no_grad():
-            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, traj, c_base, config, naive=False)
+            def_a, _ = midas_defense_forward_vulnerable(x_adv_a, win_a, c_base, config, naive=False)
             if (classifier(def_a) > 0.5).item() != y_nat.item():
                 ref_adaptive_succ += 1
 
