@@ -18,6 +18,7 @@ from shadow.scratch.debug_gradients import (
     midas_defense_forward_vulnerable,
     vulnerable_basis,
 )
+from shadow.save_results import save_results
 
 
 def log_confidence_distribution(classifier, samples, label=""):
@@ -264,6 +265,30 @@ def main():
     else:
         print(f"  GATE: FAILED (no config exceeds 2% gap)")
     print(f"  Qualitative assessment: {'Real gap' if abs(max_gap) > 0.05 else 'Marginal or absent gap'}")
+
+    # ---- Save results ----
+    saved_results = []
+    for name, r in results.items():
+        parts = name.split()
+        T_val = int(parts[0].split("=")[1])
+        eps_val = float(parts[1].split("=")[1])
+        saved_results.append({
+            "update_rule": "sign",
+            "T": T_val,
+            "epsilon": eps_val,
+            "naive_asr": r["naive"],
+            "adaptive_asr": r["adaptive"],
+            "n": N_SAMPLES,
+            "gap": r["gap"],
+            "gap_se": r.get("gap_se", 0),
+            "model": "SmoothMockModel",
+        })
+    save_results(
+        script_name="diagnose_check4.py",
+        config=config,
+        results=saved_results,
+        extra={"model": "SmoothMockModel", "n_samples": N_SAMPLES},
+    )
 
 
 if __name__ == "__main__":
