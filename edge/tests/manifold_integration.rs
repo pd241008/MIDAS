@@ -2,6 +2,7 @@ use std::io::Cursor;
 use std::time::Duration;
 
 use edge_core::config::MidasConfig;
+use edge_core::load_manifold_for_export;
 use edge_core::manifold::{self, pca2};
 use edge_core::ring_buffer::RingBuffer;
 use edge_core::rotation::{budget_gated_rotation_fixed_basis, compute_fixed_basis};
@@ -21,6 +22,99 @@ fn test_config(use_synthetic: bool) -> MidasConfig {
         manifold_path: "/nonexistent/test_manifold.npy".into(),
         use_synthetic_manifold: use_synthetic,
     }
+}
+
+#[test]
+fn test_harness_export_matches_pipeline_loading() {
+    let config = test_config(true);
+
+    let (export_c_base, export_basis) =
+        load_manifold_for_export(&config, None);
+
+    let expected_manifold = manifold::generate_synthetic_manifold(config.D, 200, 42);
+    let expected_c_base = expected_manifold.centroid.clone();
+    let expected_basis = pca2(&expected_manifold).expect("PCA-2 should succeed");
+
+    assert_eq!(export_c_base.len(), expected_c_base.len());
+    for (a, b) in export_c_base.iter().zip(&expected_c_base) {
+        assert!(
+            (a - b).abs() < 1e-6,
+            "c_base mismatch: export={a}, expected={b}"
+        );
+    }
+
+    assert_eq!(export_basis.len(), expected_basis.len());
+    for (i, (eb, xb)) in export_basis.iter().zip(&expected_basis).enumerate() {
+        assert_eq!(eb.len(), xb.len(), "basis[{i}] dim mismatch");
+        for (a, b) in eb.iter().zip(xb) {
+            let diff = (a - b).abs();
+            assert!(
+                diff < 1e-5 || (a * b).abs() > 0.999,
+                "basis[{i}] vector mismatch: export={a}, expected={b}, diff={diff}",
+            );
+        }
+    }
+}
+
+#[test]
+fn test_harness_export_matches_pipeline_loading_real_file() {
+    let samples = vec![
+        vec![0.0, 0.0, 0.0],
+        vec![1.0, 0.01, -0.01],
+        vec![-1.0, -0.01, 0.01],
+        vec![0.5, 0.02, -0.02],
+        vec![-0.5, -0.02, 0.02],
+    ];
+    let mut buf = Cursor::new(Vec::new());
+    manifold::write_npy(&mut buf, &samples).unwrap();
+    let bytes = buf.into_inner();
+
+    let tmp = std::env::temp_dir().join("test_midas_harness.npy");
+    std::fs::write(&tmp, &bytes).unwrap();
+
+    let config = MidasConfig {
+        W: 10,
+        D: 3,
+        gamma: 0.292,
+        lambda: 1.0,
+        k: 2.0,
+        tau: 0.75,
+        delta_theta_max_deg: 45.0,
+        sla_budget_ms: 10,
+        channel_capacity: 4,
+        model_path: "models/classifier.tflite".into(),
+        manifold_path: tmp.to_str().unwrap().to_string(),
+        use_synthetic_manifold: false,
+    };
+
+    let (export_c_base, export_basis) =
+        load_manifold_for_export(&config, None);
+
+    let expected_manifold = manifold::load_manifold(tmp.to_str().unwrap(), 3).unwrap();
+    let expected_c_base = expected_manifold.centroid.clone();
+    let expected_basis = pca2(&expected_manifold).expect("PCA-2 should succeed");
+
+    assert_eq!(export_c_base.len(), expected_c_base.len());
+    for (a, b) in export_c_base.iter().zip(&expected_c_base) {
+        assert!(
+            (a - b).abs() < 1e-6,
+            "c_base mismatch: export={a}, expected={b}"
+        );
+    }
+
+    assert_eq!(export_basis.len(), expected_basis.len());
+    for (i, (eb, xb)) in export_basis.iter().zip(&expected_basis).enumerate() {
+        assert_eq!(eb.len(), xb.len(), "basis[{i}] dim mismatch");
+        for (a, b) in eb.iter().zip(xb) {
+            let diff = (a - b).abs();
+            assert!(
+                diff < 1e-5 || (a * b).abs() > 0.999,
+                "basis[{i}] vector mismatch: export={a}, expected={b}, diff={diff}",
+            );
+        }
+    }
+
+    std::fs::remove_file(&tmp).ok();
 }
 
 #[test]
