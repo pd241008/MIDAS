@@ -124,7 +124,7 @@ fn run_harness(synthetic_override: Option<bool>) {
         .unwrap_or_else(|_| "configs/edge_config.json".to_string());
     let config = MidasConfig::from_file(&config_path).expect("failed to load config");
 
-    let (c_base, basis) = rotation_thread::load_manifold_for_export(&config, synthetic_override);
+    let (c_base, basis) = edge_core::load_manifold_for_export(&config, synthetic_override);
 
     let defense_success = report::placeholder_defense_success();
     let latency = report::placeholder_latency();
