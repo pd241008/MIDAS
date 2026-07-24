@@ -2,8 +2,9 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::Receiver;
-use log::{info, warn};
+use log::{error, info, warn};
 use edge_core::config::MidasConfig;
+use edge_core::manifold;
 use edge_core::rotation::{budget_gated_rotation_fixed_basis, compute_fixed_basis};
 
 use crate::channels::DefenseCommand;
@@ -14,27 +15,67 @@ pub fn rotation_thread(
     model: &dyn InferenceModel,
     config: &MidasConfig,
     hist: &Mutex<Vec<Duration>>,
+    synthetic_override: Option<bool>,
 ) {
     info!("rotation thread started on core 2");
 
     let sla_budget = Duration::from_millis(config.sla_budget_ms);
-    let c_base = load_manifold(&config.manifold_path);
 
-    // Compute the fixed rotation basis ONCE at startup from the base manifold.
-    // This basis is held fixed for the life of the deployment and MUST NOT
-    // depend on per-query state (security-motivated: prevents attacker from
-    // backpropagating through the rotation plane).
+    let use_synthetic = synthetic_override.unwrap_or(config.use_synthetic_manifold);
+
+    let (manifold, is_synthetic) = if use_synthetic {
+        warn!(
+            "WARNING: using synthetic manifold, not loaded from disk — \
+             this is a local dev configuration, NOT a real deployment"
+        );
+        (manifold::generate_synthetic_manifold(config.D, 200, 42), true)
+    } else {
+        match manifold::load_manifold(&config.manifold_path, config.D) {
+            Ok(m) => {
+                info!(
+                    "loaded real manifold from {}: {} samples, dim={}",
+                    config.manifold_path, m.n_samples, m.dim
+                );
+                (m, false)
+            }
+            Err(e) => {
+                error!("FATAL: failed to load manifold from {}: {e}", config.manifold_path);
+                panic!("manifold loading failed: {e}");
+            }
+        }
+    };
+
     info!(
-        "computing fixed rotation basis from manifold (dim={})",
-        c_base.len()
+        "manifold: {} samples, dim={}, centroid_norm={:.6}",
+        manifold.n_samples,
+        manifold.dim,
+        manifold.centroid.iter().map(|x| x * x).sum::<f32>().sqrt(),
     );
-    let basis = compute_fixed_basis(&c_base);
-    info!(
-        "fixed rotation basis ready: b0 norm={:.4}, b1 norm={:.4}, dot={:.4}",
-        basis[0].iter().map(|x| x * x).sum::<f32>().sqrt(),
-        basis[1].iter().map(|x| x * x).sum::<f32>().sqrt(),
-        basis[0].iter().zip(&basis[1]).map(|(a, b)| a * b).sum::<f32>(),
-    );
+
+    let c_base = manifold.centroid.clone();
+
+    let basis = if manifold.n_samples >= 2 {
+        info!("computing PCA-2 fixed rotation basis from {} manifold samples", manifold.n_samples);
+        match manifold::pca2(&manifold) {
+            Ok(b) => {
+                let dot: f32 = b[0].iter().zip(&b[1]).map(|(a, c)| a * c).sum();
+                info!(
+                    "PCA-2 basis ready: b0 norm={:.4}, b1 norm={:.4}, dot={:.4}",
+                    b[0].iter().map(|x| x * x).sum::<f32>().sqrt(),
+                    b[1].iter().map(|x| x * x).sum::<f32>().sqrt(),
+                    dot,
+                );
+                b
+            }
+            Err(e) => {
+                warn!("PCA-2 failed ({e}), falling back to Gram-Schmidt from centroid");
+                compute_fixed_basis(&c_base)
+            }
+        }
+    } else {
+        info!("fewer than 2 manifold samples, using Gram-Schmidt basis from centroid");
+        compute_fixed_basis(&c_base)
+    };
 
     loop {
         let cmd = match rx.recv() {
@@ -47,9 +88,6 @@ pub fn rotation_thread(
 
         let start = Instant::now();
 
-        // Apply budget-gated rotation using the FIXED (non-attacker-coupled) basis.
-        // Only delta_theta's magnitude depends on the live trajectory via epsilon_p;
-        // the rotation plane itself is independent of the attacker's query.
         let x_rotated = if cmd.epsilon_p > 0.0 {
             budget_gated_rotation_fixed_basis(
                 &cmd.v_t,
@@ -75,11 +113,60 @@ pub fn rotation_thread(
         hist.lock().unwrap().push(elapsed);
     }
 
-    info!("rotation thread finished");
+    if is_synthetic {
+        warn!(
+            "rotation thread finished — NOTE: ran with synthetic manifold, \
+             not real data"
+        );
+    } else {
+        info!("rotation thread finished");
+    }
 }
 
-fn load_manifold(path: &str) -> Vec<f32> {
-    // TODO: load actual manifold centroid from path
-    warn!("using synthetic manifold centroid (zeros) — replace with real manifold file at {path}");
-    vec![0.0; 10]
+pub fn load_manifold_for_export(
+    config: &MidasConfig,
+    synthetic_override: Option<bool>,
+) -> (Vec<f32>, Vec<Vec<f32>>) {
+    let use_synthetic = synthetic_override.unwrap_or(config.use_synthetic_manifold);
+
+    let (manifold, is_synthetic) = if use_synthetic {
+        warn!(
+            "WARNING: using synthetic manifold for basis export — \
+             not loaded from disk"
+        );
+        (manifold::generate_synthetic_manifold(config.D, 200, 42), true)
+    } else {
+        match manifold::load_manifold(&config.manifold_path, config.D) {
+            Ok(m) => {
+                info!(
+                    "loaded manifold for basis export from {}: {} samples, dim={}",
+                    config.manifold_path, m.n_samples, m.dim
+                );
+                (m, false)
+            }
+            Err(e) => {
+                error!("FATAL: failed to load manifold for basis export from {}: {e}", config.manifold_path);
+                panic!("manifold loading failed for basis export: {e}");
+            }
+        }
+    };
+
+    let c_base = manifold.centroid.clone();
+    let basis = if manifold.n_samples >= 2 {
+        match manifold::pca2(&manifold) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!("PCA-2 failed for basis export ({e}), falling back to Gram-Schmidt");
+                compute_fixed_basis(&c_base)
+            }
+        }
+    } else {
+        compute_fixed_basis(&c_base)
+    };
+
+    if is_synthetic {
+        warn!("basis export: using synthetic manifold basis");
+    }
+
+    (c_base, basis)
 }
