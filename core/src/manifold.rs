@@ -489,6 +489,57 @@ pub fn write_npy_1d<W: std::io::Write>(w: &mut W, data: &[f32]) -> std::io::Resu
     Ok(())
 }
 
+pub fn load_manifold_for_export(
+    config: &crate::config::MidasConfig,
+    synthetic_override: Option<bool>,
+) -> (Vec<f32>, Vec<Vec<f32>>) {
+    use crate::rotation::compute_fixed_basis;
+    use log::{error, info, warn};
+
+    let use_synthetic = synthetic_override.unwrap_or(config.use_synthetic_manifold);
+
+    let (manifold, is_synthetic) = if use_synthetic {
+        warn!(
+            "WARNING: using synthetic manifold for basis export — \
+             not loaded from disk"
+        );
+        (generate_synthetic_manifold(config.D, 200, 42), true)
+    } else {
+        match load_manifold(&config.manifold_path, config.D) {
+            Ok(m) => {
+                info!(
+                    "loaded manifold for basis export from {}: {} samples, dim={}",
+                    config.manifold_path, m.n_samples, m.dim
+                );
+                (m, false)
+            }
+            Err(e) => {
+                error!("FATAL: failed to load manifold for basis export from {}: {e}", config.manifold_path);
+                panic!("manifold loading failed for basis export: {e}");
+            }
+        }
+    };
+
+    let c_base = manifold.centroid.clone();
+    let basis = if manifold.n_samples >= 2 {
+        match pca2(&manifold) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!("PCA-2 failed for basis export ({e}), falling back to Gram-Schmidt");
+                compute_fixed_basis(&c_base)
+            }
+        }
+    } else {
+        compute_fixed_basis(&c_base)
+    };
+
+    if is_synthetic {
+        warn!("basis export: using synthetic manifold basis");
+    }
+
+    (c_base, basis)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
