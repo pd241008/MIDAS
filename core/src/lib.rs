@@ -1,11 +1,13 @@
 #![allow(non_snake_case)]
 
 pub mod config;
+pub mod manifold;
 pub mod ring_buffer;
 pub mod rotation;
 pub mod trajectory;
 
 pub use config::MidasConfig;
+pub use manifold::{Manifold, ManifoldError, parse_npy};
 pub use ring_buffer::RingBuffer;
 pub use rotation::{
     budget_gated_rotation, budget_gated_rotation_fixed_basis, compute_fixed_basis,

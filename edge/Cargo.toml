@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-edge-core = { path = "../edge-core" }
+edge-core = { path = "../core" }
 crossbeam-channel = "0.5"
 core_affinity = "0.8"
 serde = { version = "1", features = ["derive"] }

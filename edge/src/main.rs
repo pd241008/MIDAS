@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
 
-use log::{info, warn};
+use log::{error, info, warn};
 use edge_core::config::MidasConfig;
 use edge_core::ring_buffer::RingBuffer;
 
@@ -40,7 +40,7 @@ fn pin_thread(core_id: usize) {
     }
 }
 
-fn run_pipeline() {
+fn run_pipeline(synthetic_override: Option<bool>) {
     info!("=== Pipeline Mode ===");
 
     let config_path = std::env::var("EDGE_CONFIG")
@@ -93,6 +93,7 @@ fn run_pipeline() {
                 &*model,
                 &config_for_rotation,
                 &*lat_for_rotation,
+                synthetic_override,
             );
         })
         .expect("failed to spawn rotation thread");
@@ -116,11 +117,15 @@ fn run_pipeline() {
     println!("{}", json);
 }
 
-fn run_harness() {
+fn run_harness(synthetic_override: Option<bool>) {
     info!("=== Harness Mode ===");
 
-    // Generate report tables matching the paper's LaTeX table shapes.
-    // Each row is a placeholder; replace with real measurements.
+    let config_path = std::env::var("EDGE_CONFIG")
+        .unwrap_or_else(|_| "configs/edge_config.json".to_string());
+    let config = MidasConfig::from_file(&config_path).expect("failed to load config");
+
+    let (c_base, basis) = rotation_thread::load_manifold_for_export(&config, synthetic_override);
+
     let defense_success = report::placeholder_defense_success();
     let latency = report::placeholder_latency();
     let pgd_iters = report::placeholder_pgd_iterations();
@@ -140,9 +145,6 @@ fn run_harness() {
         info!("attack config: {} — will run under naive AND adaptive attacker models", cfg);
     }
 
-    // Export c_base and basis to JSON for the Python shadow model
-    let c_base = vec![0.0_f32; 10]; // Matches load_manifold in rotation_thread.rs for now
-    let basis = edge_core::rotation::compute_fixed_basis(&c_base);
     let basis_json = serde_json::json!({
         "c_base": c_base,
         "basis": basis
@@ -151,16 +153,10 @@ fn run_harness() {
     std::fs::write("results/basis.json", basis_json.to_string())
         .expect("failed to write results/basis.json");
     info!("exported basis.json for PyTorch shadow evaluation");
-
-    // TODO: wire up real attack loop.
-    // For each attack config, run under both AttackerModel::Naive and ::Adaptive.
-    // Naive: use the Rust-based PGD/FGSM/C&W in attacks.rs (finite-difference gradients).
-    // Adaptive: use the PyTorch shadow model in adaptivetools/ which mirrors
-    // edge-core's math differentiably. Verify gradients with finite-difference
-    // check before trusting any adaptive-attacker number.
-    // Report TWO rows per attack:
-    //   "midas_edge"     -> naive attacker result
-    //   "midas_edge_adaptive" -> adaptive attacker result
+    info!(
+        "basis.json c_base norm={:.6}",
+        c_base.iter().map(|x| x * x).sum::<f32>().sqrt()
+    );
 }
 
 fn main() {
@@ -169,14 +165,39 @@ fn main() {
         .init();
 
     let args: Vec<String> = std::env::args().collect();
-    let mode = args.get(1).map(|s| s.as_str()).unwrap_or("pipeline");
 
-    match mode {
-        "harness" => run_harness(),
-        "all" => {
-            run_pipeline();
-            run_harness();
+    let mut synthetic_override: Option<bool> = None;
+    let mut mode = "pipeline".to_string();
+
+    for arg in &args[1..] {
+        match arg.as_str() {
+            "--synthetic-manifold" => {
+                synthetic_override = Some(true);
+                info!("CLI override: --synthetic-manifold (using synthetic manifold)");
+            }
+            "--no-synthetic-manifold" => {
+                synthetic_override = Some(false);
+                info!("CLI override: --no-synthetic-manifold (require real manifold file)");
+            }
+            "pipeline" | "harness" | "all" => {
+                mode = arg.clone();
+            }
+            other => {
+                if other.starts_with('-') {
+                    error!("unknown flag: {other}");
+                    std::process::exit(1);
+                }
+                mode = other.to_string();
+            }
         }
-        _ => run_pipeline(),
+    }
+
+    match mode.as_str() {
+        "harness" => run_harness(synthetic_override),
+        "all" => {
+            run_pipeline(synthetic_override);
+            run_harness(synthetic_override);
+        }
+        _ => run_pipeline(synthetic_override),
     }
 }
