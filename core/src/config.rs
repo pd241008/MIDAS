@@ -13,6 +13,8 @@ pub struct MidasConfig {
     pub channel_capacity: usize,
     pub model_path: String,
     pub manifold_path: String,
+    #[serde(default)]
+    pub use_synthetic_manifold: bool,
 }
 
 #[derive(Debug)]
