@@ -10,20 +10,13 @@ use edge_core::rotation::{budget_gated_rotation_fixed_basis, compute_fixed_basis
 use crate::channels::DefenseCommand;
 use crate::model::InferenceModel;
 
-pub fn rotation_thread(
-    rx: Receiver<DefenseCommand>,
-    model: &dyn InferenceModel,
+fn load_manifold_for_rotation(
     config: &MidasConfig,
-    hist: &Mutex<Vec<Duration>>,
     synthetic_override: Option<bool>,
-) {
-    info!("rotation thread started on core 2");
-
-    let sla_budget = Duration::from_millis(config.sla_budget_ms);
-
+) -> (manifold::Manifold, bool) {
     let use_synthetic = synthetic_override.unwrap_or(config.use_synthetic_manifold);
 
-    let (manifold, is_synthetic) = if use_synthetic {
+    if use_synthetic {
         warn!(
             "WARNING: using synthetic manifold, not loaded from disk — \
              this is a local dev configuration, NOT a real deployment"
@@ -43,20 +36,13 @@ pub fn rotation_thread(
                 panic!("manifold loading failed: {e}");
             }
         }
-    };
+    }
+}
 
-    info!(
-        "manifold: {} samples, dim={}, centroid_norm={:.6}",
-        manifold.n_samples,
-        manifold.dim,
-        manifold.centroid.iter().map(|x| x * x).sum::<f32>().sqrt(),
-    );
-
-    let c_base = manifold.centroid.clone();
-
-    let basis = if manifold.n_samples >= 2 {
+fn compute_basis(manifold: &manifold::Manifold, c_base: &[f32]) -> Vec<Vec<f32>> {
+    if manifold.n_samples >= 2 {
         info!("computing PCA-2 fixed rotation basis from {} manifold samples", manifold.n_samples);
-        match manifold::pca2(&manifold) {
+        match manifold::pca2(manifold) {
             Ok(b) => {
                 let dot: f32 = b[0].iter().zip(&b[1]).map(|(a, c)| a * c).sum();
                 info!(
@@ -69,13 +55,37 @@ pub fn rotation_thread(
             }
             Err(e) => {
                 warn!("PCA-2 failed ({e}), falling back to Gram-Schmidt from centroid");
-                compute_fixed_basis(&c_base)
+                compute_fixed_basis(c_base)
             }
         }
     } else {
         info!("fewer than 2 manifold samples, using Gram-Schmidt basis from centroid");
-        compute_fixed_basis(&c_base)
-    };
+        compute_fixed_basis(c_base)
+    }
+}
+
+pub fn rotation_thread(
+    rx: Receiver<DefenseCommand>,
+    model: &dyn InferenceModel,
+    config: &MidasConfig,
+    hist: &Mutex<Vec<Duration>>,
+    synthetic_override: Option<bool>,
+) {
+    info!("rotation thread started on core 2");
+
+    let sla_budget = Duration::from_millis(config.sla_budget_ms);
+
+    let (manifold, is_synthetic) = load_manifold_for_rotation(config, synthetic_override);
+
+    info!(
+        "manifold: {} samples, dim={}, centroid_norm={:.6}",
+        manifold.n_samples,
+        manifold.dim,
+        manifold.centroid.iter().map(|x| x * x).sum::<f32>().sqrt(),
+    );
+
+    let c_base = manifold.centroid.clone();
+    let basis = compute_basis(&manifold, &c_base);
 
     loop {
         let cmd = match rx.recv() {
@@ -121,52 +131,4 @@ pub fn rotation_thread(
     } else {
         info!("rotation thread finished");
     }
-}
-
-pub fn load_manifold_for_export(
-    config: &MidasConfig,
-    synthetic_override: Option<bool>,
-) -> (Vec<f32>, Vec<Vec<f32>>) {
-    let use_synthetic = synthetic_override.unwrap_or(config.use_synthetic_manifold);
-
-    let (manifold, is_synthetic) = if use_synthetic {
-        warn!(
-            "WARNING: using synthetic manifold for basis export — \
-             not loaded from disk"
-        );
-        (manifold::generate_synthetic_manifold(config.D, 200, 42), true)
-    } else {
-        match manifold::load_manifold(&config.manifold_path, config.D) {
-            Ok(m) => {
-                info!(
-                    "loaded manifold for basis export from {}: {} samples, dim={}",
-                    config.manifold_path, m.n_samples, m.dim
-                );
-                (m, false)
-            }
-            Err(e) => {
-                error!("FATAL: failed to load manifold for basis export from {}: {e}", config.manifold_path);
-                panic!("manifold loading failed for basis export: {e}");
-            }
-        }
-    };
-
-    let c_base = manifold.centroid.clone();
-    let basis = if manifold.n_samples >= 2 {
-        match manifold::pca2(&manifold) {
-            Ok(b) => b,
-            Err(e) => {
-                warn!("PCA-2 failed for basis export ({e}), falling back to Gram-Schmidt");
-                compute_fixed_basis(&c_base)
-            }
-        }
-    } else {
-        compute_fixed_basis(&c_base)
-    };
-
-    if is_synthetic {
-        warn!("basis export: using synthetic manifold basis");
-    }
-
-    (c_base, basis)
 }
