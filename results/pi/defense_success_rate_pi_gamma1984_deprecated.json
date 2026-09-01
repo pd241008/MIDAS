@@ -1,0 +1,27 @@
+{
+  "table": "On-device adaptive-robustness — PGD sweep (Raspberry Pi 5, aarch64 A76)",
+  "note": "Attack-success = prediction flipped by the defended classifier. Presented as both raw ASR and defense success = 1 - ASR. 'fixed' = deployed fixed PCA-2 basis; 'attacker-coupled' = basis an adaptive attacker who knows the rotation could exploit (gate basis). Real UNSW-NB15 d=42 W=10, real surrogate, n=200, gamma=1.984, tau=0.75.",
+  "convention_warning": "These on-device numbers use the real d=42/W=10 surrogate + deployed gamma=1.984. They do NOT match the legacy results/defense_success_rate.json columns (which were generated from the synthetic d=10/W=4 SmoothMockModel at gamma=0.292). Do not mix the two generations into one table without a consistent convention/model.",
+  "columns": ["config", "basis", "naive_ASR", "adaptive_ASR", "naive_defense_success=1-ASR", "adaptive_defense_success=1-ASR", "n"],
+  "rows": [
+    {"config": "PGD T=20  eps=0.05", "basis": "fixed", "naive_ASR": 0.85, "adaptive_ASR": 0.85, "naive_defense_success=1-ASR": 0.150, "adaptive_defense_success=1-ASR": 0.150, "n": 200},
+    {"config": "PGD T=50  eps=0.05", "basis": "fixed", "naive_ASR": 0.845, "adaptive_ASR": 0.855, "naive_defense_success=1-ASR": 0.155, "adaptive_defense_success=1-ASR": 0.145, "n": 200},
+    {"config": "PGD T=100 eps=0.05", "basis": "fixed", "naive_ASR": 0.87, "adaptive_ASR": 0.85, "naive_defense_success=1-ASR": 0.130, "adaptive_defense_success=1-ASR": 0.150, "n": 200},
+    {"config": "PGD T=20  eps=0.1",  "basis": "fixed", "naive_ASR": 0.90, "adaptive_ASR": 0.90, "naive_defense_success=1-ASR": 0.100, "adaptive_defense_success=1-ASR": 0.100, "n": 200},
+    {"config": "PGD T=50  eps=0.1",  "basis": "fixed", "naive_ASR": 0.935, "adaptive_ASR": 0.935, "naive_defense_success=1-ASR": 0.065, "adaptive_defense_success=1-ASR": 0.065, "n": 200},
+    {"config": "PGD T=100 eps=0.1", "basis": "fixed", "naive_ASR": 0.915, "adaptive_ASR": 0.925, "naive_defense_success=1-ASR": 0.085, "adaptive_defense_success=1-ASR": 0.075, "n": 200},
+    {"config": "PGD T=20  eps=0.2", "basis": "fixed", "naive_ASR": 0.96, "adaptive_ASR": 0.96, "naive_defense_success=1-ASR": 0.040, "adaptive_defense_success=1-ASR": 0.040, "n": 200},
+    {"config": "PGD T=50  eps=0.2",  "basis": "fixed", "naive_ASR": 0.96, "adaptive_ASR": 0.965, "naive_defense_success=1-ASR": 0.040, "adaptive_defense_success=1-ASR": 0.035, "n": 200},
+    {"config": "PGD T=100 eps=0.2", "basis": "fixed", "naive_ASR": 0.95, "adaptive_ASR": 0.935, "naive_defense_success=1-ASR": 0.050, "adaptive_defense_success=1-ASR": 0.065, "n": 200},
+    {"config": "PGD T=20  eps=0.05", "basis": "attacker-coupled", "naive_ASR": 0.385, "adaptive_ASR": 0.525, "naive_defense_success=1-ASR": 0.615, "adaptive_defense_success=1-ASR": 0.475, "n": 200},
+    {"config": "PGD T=50  eps=0.05", "basis": "attacker-coupled", "naive_ASR": 0.385, "adaptive_ASR": 0.525, "naive_defense_success=1-ASR": 0.615, "adaptive_defense_success=1-ASR": 0.475, "n": 200},
+    {"config": "PGD T=100 eps=0.05", "basis": "attacker-coupled", "naive_ASR": 0.385, "adaptive_ASR": 0.53, "naive_defense_success=1-ASR": 0.615, "adaptive_defense_success=1-ASR": 0.470, "n": 200},
+    {"config": "PGD T=20  eps=0.1",  "basis": "attacker-coupled", "naive_ASR": 0.405, "adaptive_ASR": 0.94, "naive_defense_success=1-ASR": 0.595, "adaptive_defense_success=1-ASR": 0.060, "n": 200},
+    {"config": "PGD T=50  eps=0.1",  "basis": "attacker-coupled", "naive_ASR": 0.40, "adaptive_ASR": 0.935, "naive_defense_success=1-ASR": 0.600, "adaptive_defense_success=1-ASR": 0.065, "n": 200},
+    {"config": "PGD T=100 eps=0.1", "basis": "attacker-coupled", "naive_ASR": 0.405, "adaptive_ASR": 0.95, "naive_defense_success=1-ASR": 0.595, "adaptive_defense_success=1-ASR": 0.050, "n": 200},
+    {"config": "PGD T=20  eps=0.2", "basis": "attacker-coupled", "naive_ASR": 0.415, "adaptive_ASR": 1.0, "naive_defense_success=1-ASR": 0.585, "adaptive_defense_success=1-ASR": 0.000, "n": 200},
+    {"config": "PGD T=50  eps=0.2",  "basis": "attacker-coupled", "naive_ASR": 0.51, "adaptive_ASR": 1.0, "naive_defense_success=1-ASR": 0.490, "adaptive_defense_success=1-ASR": 0.000, "n": 200},
+    {"config": "PGD T=100 eps=0.2", "basis": "attacker-coupled", "naive_ASR": 0.545, "adaptive_ASR": 0.995, "naive_defense_success=1-ASR": 0.455, "adaptive_defense_success=1-ASR": 0.005, "n": 200}
+  ],
+  "sources": ["results/pi/check4_real_data_pi.json"]
+}

@@ -1,0 +1,29 @@
+{
+  "experiment": "#6 phase-split per-inference latency, RECALIBRATED gamma=2.3061",
+  "platform": "Raspberry Pi 5, aarch64 Cortex-A76, production edge pipeline (rotation_thread + PhaseMixSensor)",
+  "config": "configs/edge_config.json gamma=2.3061 W=10 D=42",
+  "protocol": "PHASE_BENIGN=400 PHASE_ADV=400 PHASE_SEGMENTS=10; benign/adv injected via PhaseMixSensor; phase chosen by epsilon_p <= gamma -> Archimedean, else Logarithmic (defense_thread.rs:50-51)",
+  "gamma": 2.3061,
+  "gamma_recalibration": "Corrected from deprecated gamma=1.984/gamma=0.292. Prior run (gamma=0.292 config) archived as phase_split_latency_summary_gamma1984_deprecated.json.",
+  "results_p50_p99_ms": {
+    "archimedean": {
+      "count": 1973,
+      "p50_ms": 0.102907,
+      "p95_ms": 0.103129,
+      "p99_ms": 0.10324,
+      "max_ms": 0.110222,
+      "median_us": 102.907
+    },
+    "logarithmic": {
+      "count": 2027,
+      "p50_ms": 0.102907,
+      "p95_ms": 0.103129,
+      "p99_ms": 0.103241,
+      "max_ms": 0.103611,
+      "median_us": 102.907
+    }
+  },
+  "conclusion": "Logarithmic phase adds ZERO per-inference overhead vs Archimedean at gamma=2.3061 (p50 0.10291ms vs 0.10291ms, identical to 4+ decimals). The adaptive (Logarithmic) tier is free at deployment. Cross-check: dev-box x86_64 also gave 0.112/0.112 (identical).",
+  "deprecated_gamma1984": "results/pi/phase_split_latency_summary_gamma1984_deprecated.json",
+  "date": "2026-08-31"
+}

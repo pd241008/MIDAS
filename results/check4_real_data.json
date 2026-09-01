@@ -1,0 +1,120 @@
+{
+  "vuln": {
+    "PGD T=20  eps=0.05": {
+      "naive": 0.39,
+      "adaptive": 0.53,
+      "gap": 0.14,
+      "n": 200
+    },
+    "PGD T=50  eps=0.05": {
+      "naive": 0.39,
+      "adaptive": 0.525,
+      "gap": 0.135,
+      "n": 200
+    },
+    "PGD T=100 eps=0.05": {
+      "naive": 0.385,
+      "adaptive": 0.53,
+      "gap": 0.14500000000000002,
+      "n": 200
+    },
+    "PGD T=20  eps=0.1": {
+      "naive": 0.42,
+      "adaptive": 0.92,
+      "gap": 0.5,
+      "n": 200
+    },
+    "PGD T=50  eps=0.1": {
+      "naive": 0.415,
+      "adaptive": 0.96,
+      "gap": 0.5449999999999999,
+      "n": 200
+    },
+    "PGD T=100 eps=0.1": {
+      "naive": 0.405,
+      "adaptive": 0.935,
+      "gap": 0.53,
+      "n": 200
+    },
+    "PGD T=20  eps=0.2": {
+      "naive": 0.385,
+      "adaptive": 1.0,
+      "gap": 0.615,
+      "n": 200
+    },
+    "PGD T=50  eps=0.2": {
+      "naive": 0.53,
+      "adaptive": 1.0,
+      "gap": 0.47,
+      "n": 200
+    },
+    "PGD T=100 eps=0.2": {
+      "naive": 0.575,
+      "adaptive": 0.99,
+      "gap": 0.41500000000000004,
+      "n": 200
+    }
+  },
+  "fixed": {
+    "PGD T=20  eps=0.05": {
+      "naive": 0.835,
+      "adaptive": 0.845,
+      "gap": 0.010000000000000009,
+      "n": 200
+    },
+    "PGD T=50  eps=0.05": {
+      "naive": 0.845,
+      "adaptive": 0.85,
+      "gap": 0.0050000000000000044,
+      "n": 200
+    },
+    "PGD T=100 eps=0.05": {
+      "naive": 0.85,
+      "adaptive": 0.85,
+      "gap": 0.0,
+      "n": 200
+    },
+    "PGD T=20  eps=0.1": {
+      "naive": 0.89,
+      "adaptive": 0.89,
+      "gap": 0.0,
+      "n": 200
+    },
+    "PGD T=50  eps=0.1": {
+      "naive": 0.89,
+      "adaptive": 0.925,
+      "gap": 0.03500000000000003,
+      "n": 200
+    },
+    "PGD T=100 eps=0.1": {
+      "naive": 0.925,
+      "adaptive": 0.92,
+      "gap": -0.0050000000000000044,
+      "n": 200
+    },
+    "PGD T=20  eps=0.2": {
+      "naive": 0.935,
+      "adaptive": 0.935,
+      "gap": 0.0,
+      "n": 200
+    },
+    "PGD T=50  eps=0.2": {
+      "naive": 0.965,
+      "adaptive": 0.975,
+      "gap": 0.010000000000000009,
+      "n": 200
+    },
+    "PGD T=100 eps=0.2": {
+      "naive": 0.93,
+      "adaptive": 0.975,
+      "gap": 0.04499999999999993,
+      "n": 200
+    }
+  },
+  "gate_passed": true,
+  "gamma": 1.984,
+  "d": 42,
+  "w": 10,
+  "n_samples": 200,
+  "data_source": "UNSW-NB15"
+}

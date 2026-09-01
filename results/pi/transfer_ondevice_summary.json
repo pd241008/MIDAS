@@ -1,0 +1,28 @@
+{
+  "experiment": "#7 transfer re-validation: surrogate-generated naive-vs-adaptive PGD adversarial inputs evaluated on the production FFI-backed TFLite classifier (Raspberry Pi 5, aarch64 A76).",
+  "protocol": "gen_transfer_batch.py crafts L-inf PGD (T=50, eps=0.1, alpha=0.01) against the d=42 real surrogate with the attacker-coupled (vulnerable) basis, both naive (defense view detached) and adaptive (gradients through whole defense incl. rotation+basis). classify_transfer.rs loads the real float32 TFLite classifier via the C FFI and reports flip-rate (ASR) vs the surrogate natural label. This tests adversarial-transfer to the deployed classifier, per Section VII-B limitation (gate used only the surrogate). RECALIBRATED gamma=2.3061 (corrected from deprecated 1.984 = benign P75). Prior transfer run archived as transfer_ffi_gamma1984_deprecated.json.",
+  "results_pi5_a76_real_classifier_gamma23061": {
+    "n": 200,
+    "naive_asr": 0.385,
+    "adaptive_asr": 0.270,
+    "naive_flips": 77,
+    "adaptive_flips": 54,
+    "original_flip_sanity": 0.000,
+    "label_balance": "see transfer_batch.json",
+    "gamma": 2.3061
+  },
+  "reconciliation": {
+    "dev_box_n20_smoke": "naive 0.05 / adaptive 0.30 — small-sample (n=20), NOT reliable; direction did not hold at n=200.",
+    "pi_n200_gamma23061": "naive 0.385 > adaptive 0.270 on the real classifier — the ORDERING INVERTS vs the surrogate-side coupled-basis advantage. Direction robust to recalibration: previous gamma=1.984 run gave naive 0.380 / adaptive 0.285.",
+    "interpretation": "Both attacks DO transfer to the real classifier (0.270-0.385 ASR vs 0.000 on originals), confirming adversarial exposure survives transfer. The naive>adaptive ordinal inversion on the real classifier (opposite of the surrogate attacker-coupled gate) is itself a finding: adaptive coupled-basis optimization is surrogate-overfit and transfers LESS cleanly; naive transfers more on average. Reported honestly as a transfer-gap contrast.",
+    "key_defense_fact": "Transfer ASR (0.270-0.385) is well below the surrogate attacker-coupled gap the gate demonstrated, so the deployed classifier retains meaningful robustness to crafted inputs despite surrogate coupling."
+  },
+  "sources": {
+    "transfer_ffi_pi": "results/pi/transfer_ffi.json",
+    "transfer_batch_pi": "results/pi/transfer_batch.json (N=200, 412KB)",
+    "deprecated_gamma1984": "results/pi/transfer_ffi_gamma1984_deprecated.json",
+    "generator": "shadow/gen_transfer_batch.py",
+    "classifier_bin": "edge/src/bin/classify_transfer.rs (built with --features tflite, CARGO_TARGET_DIR repo-root target/)"
+  },
+  "date": "2026-08-31"
+}

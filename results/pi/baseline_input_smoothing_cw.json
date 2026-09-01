@@ -1,0 +1,18 @@
+{
+  "baseline": "input_smoothing",
+  "attack": "cw",
+  "gamma": 2.3061,
+  "n": 200,
+  "surrogate_asr_naive": 0.175,
+  "surrogate_asr_adaptive": 0.0,
+  "surrogate_defense_success_naive": 0.825,
+  "surrogate_defense_success_adaptive": 1.0,
+  "rejected_naive": 0,
+  "rejected_adaptive": 0,
+  "naive_eq_adaptive_note": "Baselines with no rotational manifold parameter (chen_query_blinding, adv_training) have naive==adaptive; only input_smoothing has a naive-as-detached-expectation split.",
+  "elapsed_seconds": 365.59036660194397,
+  "iters": 100,
+  "c_steps": 3,
+  "lr": 0.01,
+  "initial_c": 1.0
+}

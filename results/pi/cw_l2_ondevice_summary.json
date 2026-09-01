@@ -1,0 +1,22 @@
+{
+  "experiment": "C&W-L2 attacker, on-device (Raspberry Pi 5, aarch64 A76), real d=42 surrogate, RECALIBRATED gamma.",
+  "method": "shadow/run_cw_real.py + shadow/cw_attack.py. Carlini-Wagner L2 (untargeted, binary sigmoid), tanh-space, Adam, iters=100, binary-search over c in {1,4,16}, initial_c=1, lr=0.01. Real UNSW-NB15 benign, W=10, tau=0.75, n=200, seed 42.",
+  "gamma": 2.3061,
+  "gamma_recalibration": "Corrected from deprecated gamma=1.984 (benign P75) to benign P95=2.3061 per the paper rule 'phase boundary = 95th pct benign epsilon_p'. Prior gamma=1.984 run archived as cw_l2_pi_final_gamma1984_deprecated.json. FPR at new gamma = 5.01%.",
+  "results_pi5_a76_gamma23061": {
+    "attacker_coupled / naive":    {"asr": 0.740, "n": 200, "median_l2": 0.1627, "mean_l2": 0.2955},
+    "attacker_coupled / adaptive": {"asr": 0.480, "n": 200, "median_l2": 0.2462, "mean_l2": 0.2712},
+    "fixed_pca2 / naive":          {"asr": 0.620, "n": 200, "median_l2": 0.2315, "mean_l2": 0.2273},
+    "fixed_pca2 / adaptive":       {"asr": 0.620, "n": 200, "median_l2": 0.2320, "mean_l2": 0.2280}
+  },
+  "c_and_w_vs_pgd_contrast": {
+    "fixed_pca2_basis": "Adaptive == naive (0.620 vs 0.620) at gamma=2.3061 -- the adaptive C&W attacker gains NO advantage over naive on the deployed basis (consistent with PGD gate: fixed basis yields no adaptive edge).",
+    "attacker_coupled_basis": "Adaptive (0.480) LOWER than naive (0.740). The adaptive C&W optimizer does WORSE than naive on the attacker-coupled basis -- opposite of PGD. Mechanistic cause: for the coupled (vulnerable) basis, adaptive gradients flow through a basis that moves with the attacker's own point (vulnerable_basis(x_t)), making the Adam-based C&W objective strongly non-stationary; PGD's sign dynamics are less affected. Reported honestly as an attack-methodology contrast, NOT relabeled as a MIDAS robustness win.",
+    "reproducibility": "Direction (fixed flat, coupled adaptive<naive) is robust to the gamma recalibration: 1.984 run gave fixed 0.610/0.610 and coupled naive 0.475 / adaptive 0.295; 2.3061 run gives fixed 0.620/0.620 and coupled naive 0.740 / adaptive 0.480. Same qualitative ordering; absolute ASR higher at corrected gamma (higher epsilon threshold = less aggressive rotation on mid-level trajectories)."
+  },
+  "sources": {
+    "n200_pi_gamma23061": "results/pi/cw_l2_pi_final.json",
+    "n200_pi_gamma1984_deprecated": "results/pi/cw_l2_pi_final_gamma1984_deprecated.json"
+  },
+  "date": "2026-08-31"
+}

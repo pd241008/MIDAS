@@ -1,0 +1,29 @@
+[
+  {
+    "attack": "PGD T=100 eps=0.1",
+    "undefended": 0.0,
+    "adv_training": 0.45,
+    "input_smoothing": 0.32,
+    "chen_query_blinding": 0.28,
+    "midas_edge_naive": 0.62,
+    "midas_edge_adaptive": 0.62
+  },
+  {
+    "attack": "FGSM eps=0.1",
+    "undefended": 0.0,
+    "adv_training": 0.52,
+    "input_smoothing": 0.41,
+    "chen_query_blinding": 0.35,
+    "midas_edge_naive": 0.92,
+    "midas_edge_adaptive": 0.9
+  },
+  {
+    "attack": "C&W L2",
+    "undefended": 0.0,
+    "adv_training": 0.38,
+    "input_smoothing": 0.29,
+    "chen_query_blinding": 0.31,
+    "midas_edge_naive": 0.84,
+    "midas_edge_adaptive": 0.81
+  }
+]

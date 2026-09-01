@@ -1,0 +1,14 @@
+[
+  {
+    "pgd_t": 20,
+    "defense_rate": 0.91
+  },
+  {
+    "pgd_t": 50,
+    "defense_rate": 0.88
+  },
+  {
+    "pgd_t": 100,
+    "defense_rate": 0.87
+  }
+]

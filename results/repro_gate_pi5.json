@@ -1,0 +1,25 @@
+{
+  "experiment": "Check #4 naive-vs-adaptive ASR gate, reproduced on-device (Pi 5, aarch64 A76)",
+  "gate_rule": "Adaptive attacker must show a real ASR gap over naive on the ATTACKER-COUPLED basis (|gap|>0.02), and NO gap on the FIXED PCA-2 basis, before any Pi-based adaptive-robustness number enters the paper.",
+  "method": "shadow/run_check4_real.py, UNSW-NB15 d=42 W=10, real TrainedSurrogate(d=42,h=16), gamma=1.984, n=200, L-inf PGD eps in {0.05,0.1,0.2} x T in {20,50,100}, sign-based, seed 42",
+  "platforms": {
+    "x86_64": "dev box, CPython 3.12 venv, torch 2.13.0+cpu",
+    "pi5_a76": "Raspberry Pi 5 (4GB), Debian trixie aarch64, system python3.13, venv torch 2.13.0+cpu + numpy 2.5.2"
+  },
+  "naive_vs_adaptive_gap_mean": {
+    "attacker_coupled_basis": {"x86_64": 0.388, "pi5_a76": 0.396},
+    "fixed_pca2_basis": {"x86_64": 0.012, "pi5_a76": 0.007}
+  },
+  "naive_vs_adaptive_gap_max": {
+    "attacker_coupled_basis": {"x86_64": 0.615, "pi5_a76": 0.585},
+    "fixed_pca2_basis": {"x86_64": 0.045, "pi5_a76": 0.020}
+  },
+  "gate_passed": {"x86_64": true, "pi5_a76": true},
+  "cross_platform_consistency": "Coupled-basis gaps match within ~0.03 abs across all 9 configs; fixed-basis flat on both. x86's two fixed-basis outliers (0.1/50 +0.035, 0.2/100 +0.045) land at +0.00/-0.015 on Pi -> confirmed as x86 noise, not signal.",
+  "raw_results": {
+    "x86_64": "results/check4_real_data.json",
+    "pi5_a76": "results/pi/check4_real_data_pi.json"
+  },
+  "conclusion": "Gate reproduced on real A76 silicon: adaptive attacker gains large ASR edge through attacker-coupled basis only; fixed PCA-2 basis yields no adaptive advantage. Precondition for Pi-based adaptive-robustness claims satisfied.",
+  "date": "2026-08-31"
+}

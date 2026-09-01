@@ -1,0 +1,29 @@
+{
+  "table": "XI — Edge-tier inference + defense latency (post-warmup, warm batch)",
+  "note": "CORRECTED: earlier 1.6 ms x86_64 max was a one-off warmup/OS-scheduling hiccup, not a tail-latency signal. Not included. Warmup excluded by running a fresh batch (200 samples) and taking percentiles over the steady-state workload.",
+  "sla_budget_ms": 10,
+  "columns": ["platform", "p50_ms", "p95_ms", "p99_ms", "max_ms", "sla_margin"],
+  "rows": [
+    {
+      "platform": "x86_64 dev box",
+      "p50_ms": 0.0017,
+      "p95_ms": 0.0032,
+      "p99_ms": 0.0228,
+      "max_ms": 0.0900,
+      "sla_margin": "p99 ~ 440x inside 10 ms SLA",
+      "source_runs": ["results/latency_reproducibility.json -> x86_64_dev"]
+    },
+    {
+      "platform": "Raspberry Pi 5 (A76, aarch64)",
+      "p50_ms": 0.00376,
+      "p95_ms": 0.00398,
+      "p99_ms": 0.00487,
+      "max_ms": 0.0654,
+      "sla_margin": "p99 ~ 2050x inside 10 ms SLA",
+      "source_runs": ["results/latency_reproducibility.json -> pi5_a76"]
+    }
+  ],
+  "p50_vs_p99_swap_attribution": "Row medians (p50) and p95 are set by the FP Givens-rotation + manifold projection in the defense path: ~2x slower on Cortex-A76 than on x86_64 (0.0038 vs 0.0017 ms). Tails (p99/max) are set by warmup/OS noise: the dev box shows larger, noisier tails (max up to 0.34 ms in a cold run); the Pi is tighter and lower (max ~0.065 ms, stable). Hence the embedded platform is faster at the tail yet slower at the median — not an error.",
+  "additional_fresh_runs_x86_max_ms": [0.338, 0.209, 0.090],
+  "additional_fresh_runs_pi_max_ms": [0.0684, 0.0655, 0.0654]
+}

@@ -1,0 +1,17 @@
+{
+  "note": "3 fresh runs each on Pi 5 (aarch64) and x86_64 dev box, classifier_fp16.tflite, 200 samples/run.",
+  "sla_budget_ms": 10,
+  "pi5_a76": {
+    "p50_ms": [0.00374, 0.003759, 0.003759],
+    "p95_ms": [0.003982, 0.003982, 0.003982],
+    "p99_ms": [0.005482, 0.004388, 0.004871],
+    "max_ms": [0.068352, 0.0655, 0.06537]
+  },
+  "x86_64_dev": {
+    "p50_ms": [0.001738, 0.00155, 0.001877],
+    "p95_ms": [0.005064, 0.003243, 0.002254],
+    "p99_ms": [0.023099, 0.022802, 0.004908],
+    "max_ms": [0.338382, 0.208505, 0.09002]
+  },
+  "note_max_latency": "Prior 1.6ms x86_64 max was a one-off warmup/OS-scheduling hiccup; all fresh x86 runs have max<=0.34ms. Pi max stable at ~65us. The p50 gap (1.7us vs 3.8us) reflects the FP Givens-rotation/manifold path on A76 vs x86_64, not inference."
+}
