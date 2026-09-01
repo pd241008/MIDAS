@@ -1,6 +1,37 @@
 use serde::Serialize;
 use std::time::Duration;
 
+use crate::channels::Phase;
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct PhaseLatencySample {
+    pub phase: Phase,
+    pub latency: Duration,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PhaseLatencySummary {
+    pub archimedean: LatencyHistogram,
+    pub logarithmic: LatencyHistogram,
+}
+
+impl PhaseLatencySummary {
+    pub fn from_samples(samples: &[PhaseLatencySample]) -> Self {
+        let mut arch = Vec::new();
+        let mut log = Vec::new();
+        for s in samples {
+            match s.phase {
+                Phase::Archimedean => arch.push(s.latency),
+                Phase::Logarithmic => log.push(s.latency),
+            }
+        }
+        Self {
+            archimedean: LatencyHistogram::from_samples(arch),
+            logarithmic: LatencyHistogram::from_samples(log),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct LatencyHistogram {
     pub samples: Vec<f64>,
