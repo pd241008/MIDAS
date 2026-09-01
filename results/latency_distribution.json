@@ -1,0 +1,30 @@
+[
+  {
+    "component": "Sensor -> Defense",
+    "p50_ms": 0.02,
+    "p95_ms": 0.05,
+    "p99_ms": 0.08,
+    "max_ms": 0.12
+  },
+  {
+    "component": "Momentum + Epsilon",
+    "p50_ms": 0.01,
+    "p95_ms": 0.03,
+    "p99_ms": 0.04,
+    "max_ms": 0.06
+  },
+  {
+    "component": "Givens Rotation",
+    "p50_ms": 0.08,
+    "p95_ms": 0.15,
+    "p99_ms": 0.22,
+    "max_ms": 0.35
+  },
+  {
+    "component": "Inference (Mock)",
+    "p50_ms": 0.05,
+    "p95_ms": 0.05,
+    "p99_ms": 0.06,
+    "max_ms": 0.07
+  }
+]

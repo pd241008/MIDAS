@@ -8,6 +8,7 @@ use edge_core::manifold;
 use edge_core::rotation::{budget_gated_rotation_fixed_basis, compute_fixed_basis};
 
 use crate::channels::DefenseCommand;
+use crate::metrics::PhaseLatencySample;
 use crate::model::InferenceModel;
 
 fn load_manifold_for_rotation(
@@ -68,7 +69,7 @@ pub fn rotation_thread(
     rx: Receiver<DefenseCommand>,
     model: &dyn InferenceModel,
     config: &MidasConfig,
-    hist: &Mutex<Vec<Duration>>,
+    hist: &Mutex<Vec<PhaseLatencySample>>,
     synthetic_override: Option<bool>,
 ) {
     info!("rotation thread started on core 2");
@@ -120,7 +121,10 @@ pub fn rotation_thread(
         }
 
         let elapsed = start.elapsed();
-        hist.lock().unwrap().push(elapsed);
+        hist.lock().unwrap().push(PhaseLatencySample {
+            phase: cmd.phase,
+            latency: elapsed,
+        });
     }
 
     if is_synthetic {

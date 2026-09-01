@@ -1,0 +1,20 @@
+{
+  "experiment": "#4 FPR of Logarithmic-phase trigger on benign traffic, real data W=10, cleaned windows",
+  "config": {
+    "W": 10,
+    "D": 42,
+    "gamma": 2.3061,
+    "tau": 0.75
+  },
+  "trigger_rule": "epsilon_p > gamma -> Logarithmic phase (aggressive rotation clamp at delta_theta_max)",
+  "fpr_benign_only_at_operating_gamma": 0.0501,
+  "fpr_at_benign_p95": 0.05,
+  "clean_benign_epsilon_p_quantiles": {
+    "p50": 1.528,
+    "p75": 1.9827,
+    "p90": 2.2704,
+    "p95": 2.3062
+  },
+  "interpretation": "GAMMA_RECALIBRATED set to benign epsilon_p P95 (2.3061) per the paper rule 'phase boundary = 95th pct benign epsilon_p'. FPR at the operating gamma is therefore 5% by construction if gamma == P95 of the SAME clean benign distribution. Small deviations from exactly 5% arise if the operating gamma (computed on a different/prior benign sample) differs from the P95 of this clean window set. A clean-window P95-differs-from-2.3061 value here indicates the operating gamma's calibration source vs this clean test windows differ; report whichever is the honest held-out FPR.",
+  "n_clean_benign_windows": 36973
+}

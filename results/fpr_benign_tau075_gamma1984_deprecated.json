@@ -1,0 +1,21 @@
+{
+  "experiment": "#4 FPR of Logarithmic-phase trigger on benign traffic, real data W=10",
+  "config": {
+    "W": 10,
+    "D": 42,
+    "gamma": 1.984,
+    "tau": 0.75
+  },
+  "trigger_rule": "epsilon_p > gamma -> Logarithmic phase (aggressive rotation clamp at delta_theta_max)",
+  "fpr_benign_only_at_operating_gamma": 0.2495,
+  "fpr_all_windows_at_operating_gamma": 0.1418,
+  "fpr_benign_only_if_gamma_p95_benign": 0.05,
+  "benign_epsilon_p_quantiles": {
+    "p50": 1.5279,
+    "p75": 1.9814,
+    "p90": 2.2703,
+    "p95": 2.3061
+  },
+  "interpretation": "gamma=1.984 sits at benign-only P75 (1.9814), NOT P95 (2.3061). It was recalibrated against the gate's FILTERED benign pool, not the raw sequential benign windows. Consequence: benign-only Logarithmic-phase FPR at the operating gamma is ~25% (1 in 4 benign samples flips into the aggressive rotation regime) -- elevated and above the intended ~5%. If gamma were set to benign-only P95 (2.3061), FPR would be 5.0% by construction. Recommend re-examining gamma calibration or reporting FPR at a P95-based gamma.",
+  "n_total_windows": 82323
+}

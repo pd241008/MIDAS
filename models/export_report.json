@@ -1,0 +1,50 @@
+{
+  "classifier_float32.tflite": {
+    "bytes": 4584,
+    "kb": 4.48,
+    "mode": "fp32",
+    "verification": {
+      "max_abs_diff": 1.4007091522216797e-06,
+      "mean_abs_diff": 5.961248916719342e-08,
+      "label_disagreement": 0.0,
+      "acc_pytorch": 0.8472,
+      "acc_tflite": 0.8472
+    }
+  },
+  "classifier_fp16.tflite": {
+    "bytes": 3796,
+    "kb": 3.71,
+    "mode": "fp16",
+    "verification": {
+      "max_abs_diff": 0.002153635025024414,
+      "mean_abs_diff": 0.000143780984217301,
+      "label_disagreement": 0.0002,
+      "acc_pytorch": 0.8472,
+      "acc_tflite": 0.8474
+    }
+  },
+  "classifier_dr_int8.tflite": {
+    "bytes": 4584,
+    "kb": 4.48,
+    "mode": "dynamic",
+    "verification": {
+      "max_abs_diff": 1.4007091522216797e-06,
+      "mean_abs_diff": 5.961248916719342e-08,
+      "label_disagreement": 0.0,
+      "acc_pytorch": 0.8472,
+      "acc_tflite": 0.8472
+    }
+  },
+  "classifier_int8.tflite": {
+    "bytes": 3216,
+    "kb": 3.14,
+    "mode": "int8",
+    "verification": {
+      "max_abs_diff": 0.7115839123725891,
+      "mean_abs_diff": 0.05365828797221184,
+      "label_disagreement": 0.0412,
+      "acc_pytorch": 0.8472,
+      "acc_tflite": 0.826
+    }
+  }
+}

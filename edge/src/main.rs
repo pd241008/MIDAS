@@ -1,26 +1,16 @@
 #![allow(dead_code)]
 
-mod attacks;
-mod channels;
-mod dataset;
-mod defense_thread;
-mod metrics;
-mod model;
-mod report;
-mod rotation_thread;
-mod sensor_thread;
-
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
-use std::time::Duration;
 
 use log::{error, info, warn};
 use edge_core::config::MidasConfig;
 use edge_core::ring_buffer::RingBuffer;
 
-use sensor_thread::{sensor_thread, MockSensor};
-use model::MockModel;
-use metrics::LatencyHistogram;
+use edge::{attacks, channels, defense_thread, report, rotation_thread};
+use edge::sensor_thread::{sensor_thread, MockSensor};
+use edge::model::MockModel;
+use edge::metrics::PhaseLatencySummary;
 
 fn pin_thread(core_id: usize) {
     let ids = core_affinity::get_core_ids();
@@ -53,9 +43,31 @@ fn run_pipeline(synthetic_override: Option<bool>) {
 
     let ring_buffer = Arc::new(RwLock::new(RingBuffer::new(config.W)));
 
-    let model = Box::new(MockModel);
+    let model: Box<dyn edge::model::InferenceModel> = if std::env::var("EDGE_MODEL_PATH").is_ok() {
+        #[cfg(feature = "tflite")]
+        {
+            let path = std::env::var("EDGE_MODEL_PATH").unwrap();
+            match edge::model::TfliteModel::new(&path) {
+                Ok(m) => {
+                    info!("using TfliteModel at {path}");
+                    Box::new(m)
+                }
+                Err(e) => {
+                    error!("failed to load TFLite model {path}: {e} — falling back to MockModel");
+                    Box::new(MockModel)
+                }
+            }
+        }
+        #[cfg(not(feature = "tflite"))]
+        {
+            error!("EDGE_MODEL_PATH set but built without --features tflite — using MockModel");
+            Box::new(MockModel)
+        }
+    } else {
+        Box::new(MockModel)
+    };
 
-    let latency_samples = Arc::new(Mutex::new(Vec::<Duration>::new()));
+    let latency_samples = Arc::new(Mutex::new(Vec::<edge::metrics::PhaseLatencySample>::new()));
 
     let config_for_defense = config.clone();
     let config_for_rotation = config.clone();
@@ -110,10 +122,9 @@ fn run_pipeline(synthetic_override: Option<bool>) {
     info!("rotation thread joined");
 
     let samples = latency_samples.lock().unwrap();
-    let hist = LatencyHistogram::from_samples(samples.clone());
-    drop(samples);
-    let json = serde_json::to_string_pretty(&hist).expect("failed to serialize histogram");
-    info!("latency histogram:\n{}", json);
+    let split = PhaseLatencySummary::from_samples(&samples);
+    let json = serde_json::to_string_pretty(&split).expect("failed to serialize latency");
+    info!("phase-split latency histogram:\n{}", json);
     println!("{}", json);
 }
 
