@@ -47,33 +47,31 @@ pub fn write_json<T: Serialize>(rows: &[T], path: &str) -> Result<(), String> {
 }
 
 pub fn placeholder_defense_success() -> Vec<DefenseSuccessRow> {
+    // REAL measured values on the d=42 UNSW-NB15 surrogate at recalibrated
+    // gamma=2.3061, n=200. MIDAS-Edge on the attacker-coupled basis (adaptive
+    // rotation-aware adversary, Proposition 1). Baselines at their adaptive /
+    // worst-case value. See results/pi/defense_success_vs_baselines.json for
+    // the full provenance and the honest caveats (adversarial training
+    // dominates MIDAS on PGD regardless of basis; MIDAS' adaptive edge is
+    // specific to coupled-basis C&W).
     vec![
         DefenseSuccessRow {
-            attack: "PGD T=100 eps=0.1".into(),
-            undefended: 0.0,
-            adv_training: 0.45,
-            input_smoothing: 0.32,
-            chen_query_blinding: 0.28,
-            midas_edge_naive: 0.87,
-            midas_edge_adaptive: 0.85,
+            attack: "PGD T=50 eps=0.1".into(),
+            undefended: 0.145,
+            adv_training: 0.705,
+            input_smoothing: 0.000,
+            chen_query_blinding: 0.485,
+            midas_edge_naive: 0.480,
+            midas_edge_adaptive: 0.060,
         },
         DefenseSuccessRow {
-            attack: "FGSM eps=0.1".into(),
-            undefended: 0.0,
-            adv_training: 0.52,
-            input_smoothing: 0.41,
-            chen_query_blinding: 0.35,
-            midas_edge_naive: 0.92,
-            midas_edge_adaptive: 0.90,
-        },
-        DefenseSuccessRow {
-            attack: "C&W L2".into(),
-            undefended: 0.0,
-            adv_training: 0.38,
-            input_smoothing: 0.29,
-            chen_query_blinding: 0.31,
-            midas_edge_naive: 0.84,
-            midas_edge_adaptive: 0.81,
+            attack: "C&W L2 (iters=100)".into(),
+            undefended: 0.945,
+            adv_training: 0.840,
+            input_smoothing: 1.000,
+            chen_query_blinding: 0.945,
+            midas_edge_naive: 0.260,
+            midas_edge_adaptive: 0.520,
         },
     ]
 }
