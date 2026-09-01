@@ -1,0 +1,22 @@
+{
+  "experiment": "#6 phase-split latency: Benign/Archimedean vs Adversarial/Logarithmic rows, on-device (Raspberry Pi 5, aarch64 A76).",
+  "setup": "edge/src/bin/phase_latency.rs drives the real 3-thread pipeline (sensor->defense->rotation) with PhaseMixSensor alternating benign (small-magnitude -> epsilon_p<=gamma -> Archimedean) and adversarial (large aligned -> epsilon_p>gamma -> Logarithmic) segments. Phase determined in defense_thread from penetration_epsilon_windowed vs config.gamma. Latency tagged by phase (PhaseLatencySample) and summarized per phase. Uses MockModel so the measurement isolates the ROTATION-phase cost (budget_gated_rotation_fixed_basis), distinct from full end-to-end inference latency (see results/table_xi_latency.json). configs/edge_config.json gamma=0.292.",
+  "results_pi5_a76": {
+    "archimedean_benign": {
+      "count": 3938, "p50_ms": 0.1029, "p95_ms": 0.1031, "p99_ms": 0.1032, "max_ms": 0.1556
+    },
+    "logarithmic_adversarial": {
+      "count": 4062, "p50_ms": 0.1029, "p95_ms": 0.1031, "p99_ms": 0.1033, "max_ms": 0.8871
+    }
+  },
+  "interpretation": "Archimedean and Logarithmic phase latencies are identical at p50/p95/p99 (0.1029-0.1033 ms). The aggressive Logarithmic rotation imposes NO measurable per-inference latency overhead over benign operation -- as expected since rotation uses the identical budget_gated_rotation_fixed_basis path (phase only changes delta_theta magnitude, not cost). The single Logarithmic max (0.887 ms) is a tail scheduler-jitter outlier, not a phase cost. This supports the paper's latency-robustness claim: activating the adversarial (Logarithmic) phase does not degrade throughput/latency.",
+  "mix": {"benign_len": 400, "adv_len": 400, "segments": 20, "approx_ratio": "50/50"},
+  "sources": {
+    "raw_pi": "results/pi/phase_latency_raw.json",
+    "bin": "edge/src/bin/phase_latency.rs",
+    "sensor": "edge/src/sensor_thread.rs (PhaseMixSensor)",
+    "metrics": "edge/src/metrics.rs (PhaseLatencySummary)",
+    "full_end_to_end_latency": "results/table_xi_latency.json"
+  },
+  "date": "2026-08-31"
+}

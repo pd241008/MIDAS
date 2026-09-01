@@ -1,0 +1,90 @@
+{
+  "experiment": "#8 baselines vs the real d=42 UNSW-NB15 surrogate, RECALIBRATED gamma=2.3061. Decision #2: re-run adv-training, input-smoothing, and Chen et al. query-blinding for REAL against the real surrogate (not placeholders), then FFI transfer-validate (mirror #7).",
+  "protocol": "shadow/run_baselines.py. For each baseline, the attack harness differentiates through the baseline's OWN defended forward (exact parallel to the MIDAS rotation defense): PGD (L-inf eps=0.1, alpha=0.01, T=50) and C&W-L2 (iters=100, c_steps=3, initial_c=1, lr=0.01). naive attacker = ignores the differentiable-expectation/rotation (for input_smoothing: attacks base classifier directly; structurally naive==adaptive for chen/blinding given no rotational manifold parameter). ASR = fraction of n=200 benign-subset samples (nat_conf<=0.95) whose defended prediction flips vs natural label; defense-success = 1 - ASR. Baselines have no coupled-basis manifold rotation, so evaluated on the input-space attack only.",
+  "gamma": 2.3061,
+  "n": 200,
+  "results_surrogate_side_defense_success": {
+    "input_smoothing": {
+      "desc": "Gaussian input smoothing, sigma=0.1, K=32 MC expectation (SmoothedClassifier)",
+      "PGD": {
+        "defense_success_naive": 0.16,
+        "defense_success_adaptive": 0.0,
+        "asr_naive": 0.84,
+        "asr_adaptive": 1.0
+      },
+      "C&W": {
+        "defense_success_naive": 0.825,
+        "defense_success_adaptive": 1.0,
+        "asr_naive": 0.175,
+        "asr_adaptive": 0.0
+      }
+    },
+    "chen_query_blinding": {
+      "desc": "Chen et al. query-blinding / classifier rejection (reject if natural confidence < tau=0.75); naive==adaptive structurally",
+      "PGD": {
+        "defense_success_naive": 0.51,
+        "defense_success_adaptive": 0.485,
+        "asr_naive": 0.49,
+        "asr_adaptive": 0.515
+      },
+      "C&W": {
+        "defense_success_naive": 0.945,
+        "defense_success_adaptive": 0.945,
+        "asr_naive": 0.055,
+        "asr_adaptive": 0.055
+      }
+    },
+    "adv_training": {
+      "desc": "Madry-style min-max adversarial training (PGD T=10, eps=0.1 augmentation every 5th epoch), retrained surrogate; naive==adaptive structurally",
+      "PGD": {
+        "defense_success_naive": 0.71,
+        "defense_success_adaptive": 0.705,
+        "asr_naive": 0.29,
+        "asr_adaptive": 0.295
+      },
+      "C&W": {
+        "defense_success_naive": 0.84,
+        "defense_success_adaptive": 0.84,
+        "asr_naive": 0.16,
+        "asr_adaptive": 0.16
+      }
+    }
+  },
+  "headline_honest_findings": {
+    "input_smoothing_vs_adaptive_pgd": "Plain input smoothing (sigma=0.1) is essentially defeated by the adaptive PGD attacker on this d=42 surrogate (defense-success 0.000) -- the attacker differentiates through the MC expectation. It DOES block C&W (0.825-1.000) because C&W's L2 budget cannot push through the noisy expectation.",
+    "chen_query_blinding": "Moderate vs PGD (0.485-0.510), strong vs C&W (0.945) -- tau=0.75 rejection defends most C&W because C&W's minimal L2 perturbations land near the boundary / stay low-confidence.",
+    "adv_training_is_strongest": "Adversarial training is the strongest baseline vs PGD (0.705-0.710) and solid vs C&W (0.840). Still falls below MIDAS-Edge's reported attacker-coupled adaptive edge (see defense_success_rate_pi.json) and has no per-query detection signal.",
+    "baseline_significance": "These are REAL measured surrogate-side defense-success numbers, replacing the placeholder stubs that were previously in report.rs. Each baseline is also FFI-transfer-validated (#7-mirror) so the surrogate-side robustness is checked against the deployed TFLite model."
+  },
+  "sources": {
+    "input_smoothing_pgd": "results/pi/baseline_input_smoothing_pgd.json",
+    "input_smoothing_cw": "results/pi/baseline_input_smoothing_cw.json",
+    "chen_query_blinding_pgd": "results/pi/baseline_chen_query_blinding_pgd.json",
+    "chen_query_blinding_cw": "results/pi/baseline_chen_query_blinding_cw.json",
+    "adv_training_pgd": "results/pi/baseline_adv_training_pgd.json",
+    "adv_training_cw": "results/pi/baseline_adv_training_cw.json",
+    "code": "shadow/baselines.py, shadow/run_baselines.py, shadow/gen_baseline_transfer_batch.py",
+    "adv_model_weights": "shadow/trained_weights/trained_adv_real.pt"
+  },
+  "date": "2026-08-31",
+  "ffi_transfer_validation_production_tflite": {
+    "protocol": "#7-mirror: per-baseline naive+adaptive PGD (T=50 eps=0.1) batches classified by the production FFI float32 TFLite classifier (classify_transfer). ASR = flip-rate vs surrogate natural label on the deployed model.",
+    "n": 200,
+    "input_smoothing": {
+      "naive_asr": 0.865,
+      "adaptive_asr": 1.0,
+      "originals_sanity": 0.0
+    },
+    "chen_query_blinding": {
+      "naive_asr": 0.71,
+      "adaptive_asr": 0.685,
+      "originals_sanity": 0.0
+    },
+    "adv_training": {
+      "naive_asr": 0.345,
+      "adaptive_asr": 0.38,
+      "originals_sanity": 0.0
+    },
+    "finding": "adv_training robustness transfers best to the deployed classifier (0.345-0.38 ASR); input_smoothing transfers worst (adaptive 1.000) -- its surrogate-side weakness is confirmed on the real model; chen in between (0.685-0.71)."
+  }
+}

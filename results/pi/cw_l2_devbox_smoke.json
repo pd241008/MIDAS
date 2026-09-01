@@ -1,0 +1,50 @@
+{
+  "gamma": 1.984,
+  "d": 42,
+  "w": 10,
+  "n_samples": 60,
+  "data_source": "UNSW-NB15",
+  "attacker": "adaptive through-defense (coupled) gradient",
+  "results": {
+    "attacker-coupled / naive": {
+      "asr": 0.75,
+      "n": 60,
+      "median_l2_dist": 0.1709381565451622,
+      "mean_l2_dist": 0.36772096157073975,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "attacker-coupled / adaptive": {
+      "asr": 0.5333333333333333,
+      "n": 60,
+      "median_l2_dist": 0.26256801187992096,
+      "mean_l2_dist": 0.3152211081236601,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "fixed / naive": {
+      "asr": 0.6333333333333333,
+      "n": 60,
+      "median_l2_dist": 0.30067259073257446,
+      "mean_l2_dist": 0.264455063889424,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "fixed / adaptive": {
+      "asr": 0.6333333333333333,
+      "n": 60,
+      "median_l2_dist": 0.30121688544750214,
+      "mean_l2_dist": 0.26778619873027004,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    }
+  }
+}
