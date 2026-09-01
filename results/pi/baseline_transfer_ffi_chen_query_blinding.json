@@ -1,0 +1,13 @@
+{
+  "model": "models/classifier_float32.tflite",
+  "n": 200,
+  "naive_asr": 0.71,
+  "adaptive_asr": 0.685,
+  "naive_flips": 142,
+  "adaptive_flips": 137,
+  "reference_asr_originals": 0.0,
+  "label_balance": [
+    40.0,
+    160.0
+  ]
+}

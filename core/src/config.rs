@@ -57,9 +57,9 @@ impl MidasConfig {
                 "D (feature dimension) must be > 0".into(),
             ));
         }
-        if !(0.0..=2.0).contains(&self.gamma) {
+        if !(0.0..=3.0).contains(&self.gamma) {
             return Err(ConfigError::OutOfRange(
-                "gamma must be in [0, 2]".into(),
+                "gamma must be in [0, 3]".into(),
             ));
         }
         if self.lambda <= 0.0 || self.lambda > 10.0 {

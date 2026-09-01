@@ -1,0 +1,25 @@
+{
+  "experiment": "C&W-L2 attacker, on-device (Raspberry Pi 5, aarch64 A76), real d=42 surrogate",
+  "method": "shadow/run_cw_real.py + shadow/cw_attack.py. Carlini-Wagner L2 (untargeted, binary sigmoid), tanh-space parametrization, Adam, iters=100, binary-search over c in {1,4,16}, initial_c=1, lr=0.01. Attack objective BCE to natural label; success = defended prediction flips. Real UNSW-NB15 benign samples, W=10, gamma=1.984, tau=0.75, n=200, seed 42.",
+  "attacker_models": {
+    "naive": "rotation theta and basis detached from gradient (fixed view of defense)",
+    "adaptive": "gradients flow through entire defense incl. rotation angle and coupled basis"
+  },
+  "results_pi5_a76": {
+    "attacker_coupled / naive":    {"asr": 0.475, "n": 200, "median_l2": 0.2850},
+    "attacker_coupled / adaptive": {"asr": 0.295, "n": 200, "median_l2": 0.1866},
+    "fixed_pca2 / naive":          {"asr": 0.610, "n": 200, "median_l2": 0.2484},
+    "fixed_pca2 / adaptive":       {"asr": 0.610, "n": 200, "median_l2": 0.2483}
+  },
+  "c_and_w_vs_pgd_contrast": {
+    "fixed_pca2_basis": "Adaptive == naive (0.610 vs 0.610). Adaptive attacker gains NO advantage over naive on the deployed basis. Consistent with PGD gate.",
+    "attacker_coupled_basis": "Adaptive (0.295) LOWER than naive (0.475) — the OPPOSITE of PGD (where adaptive ~0.94 beat naive ~0.41). Mechanistic cause: for coupled basis, adaptive gradient flows through a basis that moves with the attacker's own point (vulnerable_basis(x_t)), making the objective strongly non-stationary for Adam-based C&W; PGD's sign dynamics are less affected. This is a real attack-methodology contrast, reported honestly, NOT relabeled as a MIDAS robustness win.",
+    "reproducibility": "n=60 smoke reproduced identically on dev box and Pi (naive/coupled 0.750, adaptive/coupled 0.533, fixed 0.633/0.633). n=200 Pi run: coupled naive 0.475 / adaptive 0.295; fixed 0.610/0.610."
+  },
+  "sources": {
+    "n200_pi": "results/pi/cw_l2_pi_final.json",
+    "n60_pi": "results/pi/cw_l2_pi_n60.json",
+    "n60_devbox_smoke": "results/pi/cw_l2_devbox_smoke.json"
+  },
+  "date": "2026-08-31"
+}

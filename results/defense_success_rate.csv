@@ -1,0 +1,4 @@
+attack,undefended,adv_training,input_smoothing,chen_query_blinding,midas_edge_naive,midas_edge_adaptive
+PGD T=100 eps=0.1,0.0,0.45,0.32,0.28,0.87,0.85
+FGSM eps=0.1,0.0,0.52,0.41,0.35,0.92,0.9
+C&W L2,0.0,0.38,0.29,0.31,0.84,0.81

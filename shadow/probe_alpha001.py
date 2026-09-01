@@ -4,6 +4,7 @@ Diagnostic probe: alpha=0.001, T=500, eps=0.1, vulnerable basis.
 Tests whether the ~0 naive-vs-adaptive gap is saturation (parameter choice)
 or structural (linear surrogate + sign-based PGD).
 
+
 Reports:
   1. Naive ASR vs Adaptive ASR for this single config
   2. Per-step loss and ||dL/dtheta|| logs for sample 0

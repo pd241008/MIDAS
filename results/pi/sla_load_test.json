@@ -1,0 +1,46 @@
+{
+  "experiment": "SLA / throughput load test (#5) — on-device Raspberry Pi 5 (aarch64 A76)",
+  "headline": "50,000 sustained adversarial (Logarithmic-phase) queries at back-to-back max rate: 0 SLA violations at the corrected 50 ms budget. p99 latency 0.0021 ms is ~24,000x under the 50 ms SLA. Per-thread compute CPU saturates (peak 99.8%) at max offered rate.",
+  "data": {
+    "model": "models/classifier_float32.tflite (real production TFLite classifier)",
+    "platform": "Raspberry Pi 5, aarch64 A76",
+    "batch": "200 real UNSW-NB15 d=42 adversarial samples, LOAD_SCALE=5 to push into Logarithmic (adversarial) phase",
+    "total_queries": 50000,
+    "offered_rate_hz": 0.0,
+    "notes_on_rate": "LOAD_RATE_HZ=0 means back-to-back (max offered rate).",
+    "phase_census": { "archimedean": 1, "logarithmic": 49999 },
+    "gamma": 2.3061,
+    "sla_budget_ms": 50
+  },
+  "latency_ms": {
+    "p50": 0.001371,
+    "p95": 0.002074,
+    "p99": 0.002093,
+    "max": 0.365407,
+    "mean": 0.001565
+  },
+  "sla": {
+    "violations": 0,
+    "violation_frac": 0.0,
+    "margin_p99_vs_budget": "~24,000x (p99 0.0021 ms vs 50 ms)"
+  },
+  "throughput": {
+    "qps_reported": 276233,
+    "qps_is_lower_bound": true,
+    "why": "wall_s (0.181 s) includes ~0.10 s fixed thread-spawn/join overhead; pure compute path is 50000 x 1.57 us ~= 0.078 s, so true sustained processing rate is higher than the reported qps. Reported qps is a conservative lower bound.",
+    "per_thread_cpu_driver_peak_pct": 99.8
+  },
+  "honest_findings": {
+    "SLA_headroom": "The 50 ms Edge SLA is trivially satisfied; even at back-to-back offered (max-load) adversarial traffic, zero inferences exceed budget. Not a binding constraint.",
+    "cpu": "The single compute/driver thread reaches ~100% of its core at max offered rate, confirming the pipeline is CPU-bound only at artificially-maximal (back-to-back) offered load.",
+    "per_query_cost_scope": "This per-query latency (p50 0.0014 ms) covers the COMPUTE path only (defense->budget-gated rotation->TFLite inference), not the full 3-thread channel orchestration of the deployed pipeline (which #6 measured end-to-end at ~0.10 ms). Both are far inside 50 ms.",
+    "phase_independence": "Throughput is phase-independent: the Artificial/Logarithmic phase changes only scalar rotation math with identical cost, so adversarial-phase load does not alter the SLA/latency conclusion."
+  },
+  "files": {
+    "binary": "edge/src/bin/sla_load_test.rs",
+    "batch": "results/pi/load_adv_batch.json",
+    "run_script": "tools/run_sla_pi.sh",
+    "on_pi": "~/midas/results/pi/sla_load_test.json"
+  },
+  "date": "2026-08-31"
+}

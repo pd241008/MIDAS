@@ -112,17 +112,55 @@ All hyperparameters from the paper are in [`configs/edge_config.json`](./configs
 
 | Field | Default | Description |
 |-------|---------|-------------|
-| `W` | `4` | Ring buffer window size |
-| `D` | `10` | Feature vector dimension |
-| `gamma` | `0.5` | Phase transition threshold |
+| `W` | `10` | Ring buffer window size |
+| `D` | `42` | Feature vector dimension |
+| `gamma` | `2.3061` | Phase transition threshold (recalibrated = benign P95; was erroneously `0.292` synthetic / `1.984` P75, corrected to P95 per the paper rule) |
 | `lambda` | `1.0` | Rotation scaling factor |
 | `k` | `2.0` | Logarithmic growth rate |
-| `tau` | `0.3` | Similarity threshold |
+| `tau` | `0.75` | Similarity threshold |
 | `delta_theta_max_deg` | `45.0` | Maximum rotation angle |
-| `sla_budget_ms` | `10` | Budget-gating deadline |
+| `sla_budget_ms` | `50` | Budget-gating deadline (Edge tier `T_SLA=50ms`; MCU tier is `10ms`) |
 | `channel_capacity` | `4` | Bounded channel size |
 
 Each field is validated against recommended ranges at startup.
+
+## TFLite inference (production classifier)
+
+The deployed classifier is a 3.1–4.5 KB TFLite MLP (`d=42 → hidden=16, tanh,
+sigmoid`) exported from the PyTorch surrogate by
+[`shadow/export_surrogate_to_tflite.py`](./shadow/export_surrogate_to_tflite.py).
+Artifacts live in [`models/`](./models); see `models/export_report.json` for
+per-artifact sizes and Python-interpreter verification.
+
+Rust FFI bindings to the TensorFlow Lite **C API** are implemented in
+[`edge/src/tflite_ffi.rs`](./edge/src/tflite_ffi.rs) +
+[`edge/src/model.rs`](./edge/src/model.rs) behind the `tflite` feature.
+Vendored prebuilt runtimes (v2.17.1, XNNPACK, from
+[tphakala/tflite_c](https://github.com/tphakala/tflite_c/releases)):
+
+- `edge/vendor/tflite/x86_64/libtensorflowlite_c.so`
+- `edge/vendor/tflite/aarch64/libtensorflowlite_c.so`  ← Raspberry Pi 5
+
+```bash
+# FFI validation against PyTorch reference vectors
+.venv/bin/python shadow/gen_ffit_vectors.py
+cargo run --release -p edge --bin tflite_validate --features tflite -- \
+    models/classifier_fp16.tflite results/ffi_vectors.json results/ffi_validation_fp16.json
+
+# Run the live three-thread pipeline on the real model (falls back to MockModel
+# without --features tflite or if loading fails)
+EDGE_MODEL_PATH=models/classifier_fp16.tflite \
+    cargo run --release --features tflite --bin edge
+```
+
+Cross-language validation (PyTorch vs Python interpreter vs Rust FFI) shows
+max |Δp| = 1.9e-6 for float32/dynamic-int8 and 1.9e-3 for fp16 with zero label
+flips. On-device latency is far inside the 50 ms Edge SLA on both platforms. Note
+the p50/p99-swap is real and expected: the median (p50) is governed by the FP
+Givens-rotation/manifold path, which runs ~2× slower on the Pi's Cortex-A76
+than on x86_64, while the tail (p99/max) reflects warmup + noise, which is
+lower and tighter on the Pi. See `results/latency_reproducibility.json` for the
+full per-run breakdown; both platforms are comfortably ≤ 0.1 ms at the tail.
 
 ## Tests
 
@@ -136,11 +174,12 @@ fallback, ring buffer eviction, and CSV dataset loading.
 
 ## TODO
 
-- [ ] Real TFLite C++ FFI (`libtensorflowlite_c.so`) behind `--features tflite`
-- [ ] Load manifold centroid from `config.manifold_path`
-- [ ] UNSW-NB15 dataset integration in harness
+- [x] Real TFLite C++ FFI (`libtensorflowlite_c.so`) behind `--features tflite`
+- [x] PyTorch surrogate → TFLite export (float32 / fp16 / dynamic-int8 / full-int8)
+- [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
-- [ ] Experimental results (currently TBD)
+- [ ] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate), TFLM conversion, cycle counts
+- [ ] Experimental results (partially populated in `results/`)
 
 ## License
 

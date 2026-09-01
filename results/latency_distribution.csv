@@ -1,0 +1,5 @@
+component,p50_ms,p95_ms,p99_ms,max_ms
+Sensor -> Defense,0.02,0.05,0.08,0.12
+Momentum + Epsilon,0.01,0.03,0.04,0.06
+Givens Rotation,0.08,0.15,0.22,0.35
+Inference (Mock),0.05,0.05,0.06,0.07

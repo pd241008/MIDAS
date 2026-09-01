@@ -1,14 +1,14 @@
 {
   "W": 10,
-  "D": 10,
-  "gamma": 0.292,
+  "D": 42,
+  "gamma": 2.3061,
   "lambda": 1.0,
   "k": 2.0,
   "tau": 0.75,
   "delta_theta_max_deg": 45.0,
-  "sla_budget_ms": 10,
+  "sla_budget_ms": 50,
   "channel_capacity": 4,
   "model_path": "models/classifier.tflite",
-  "manifold_path": "models/manifold_centroid.npy",
-  "use_synthetic_manifold": true
+  "manifold_path": "data/manifold_real.npy",
+  "use_synthetic_manifold": false
 }

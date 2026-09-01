@@ -1,0 +1,13 @@
+{
+  "input_dim": 42,
+  "label_flip_rate": 0.0395,
+  "label_flips": 79,
+  "latency_us_max": 64.67,
+  "latency_us_p50": 1.842,
+  "latency_us_p99": 4.401,
+  "max_abs_diff": 0.614384114742279,
+  "mean_abs_diff": 0.054205140140341564,
+  "model": "models/classifier_int8.tflite",
+  "source_model_pt": "shadow/trained_weights/trained_surrogate_real.pt",
+  "vectors": 2000
+}
