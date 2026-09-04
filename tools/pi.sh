@@ -18,7 +18,7 @@ set -e
 
 PI_USER=avina
 PI_HOST=192.168.137.43
-PI_SSH="ssh -i C:\Users\user\.ssh\midas_key -o BatchMode=yes -o StrictHostKeyChecking=no $PI_USER@$PI_HOST"
+PI_SSH="ssh -i C:\Users\prath\.ssh\midas_key -o BatchMode=yes -o StrictHostKeyChecking=no $PI_USER@$PI_HOST"
 
 bridge() {
   /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \

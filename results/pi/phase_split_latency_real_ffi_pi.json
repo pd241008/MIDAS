@@ -1,0 +1,18 @@
+{
+  "experiment": "On-device real-TFLite phase-split latency — Raspberry Pi 5 (aarch64 A76), CONFIRMED",
+  "model": "models/classifier_float32.tflite (real production TFLite FFI classifier, d=42)",
+  "platform": "Raspberry Pi 5, aarch64 Cortex-A76",
+  "pipeline": "real 3-thread pipeline (sensor -> defense -> rotation) driven by phase_latency bin with EDGE_MODEL_PATH set to the real classifier; PhaseMixSensor alternates benign/adversarial segments",
+  "config": { "D": 42, "gamma": 2.3061, "W": 10, "PHASE_BENIGN": 800, "PHASE_ADV": 800, "PHASE_SEGMENTS": 16 },
+  "latency_ms": {
+    "archimedean": { "p50": 0.0014, "p95": 0.0014, "p99": 0.0014, "max": 0.0541, "n": 6352, "label": "benign phase window, full 3-thread pipeline" },
+    "logarithmic": { "p50": 0.0014, "p95": 0.0014, "p99": 0.0014, "max": 0.0152, "n": 6448, "label": "adversarial (rotation-clamped) phase window, same pipeline" }
+  },
+  "interpretation": "p50/p95/p99 all 0.0014 ms on the Pi A76 — even tighter than x86 dev (p50 0.0020 ms), consistent with the documented p50/p99 behavior (median governed by the FP Givens-rotation/manifold path on the A76 vs entropy on x86 tail). Both platforms far inside the 50 ms Edge SLA; SLA is non-binding. Confirms the aarch64 real-classifier number that #6's MockModel prototype could not supply.",
+  "files": {
+    "binary": "edge/src/bin/phase_latency.rs (EDGE_MODEL_PATH support)",
+    "run_script": "tools/run_phase_latency_pi.sh",
+    "on_pi": "~/midas/results/pi/phase_split_latency_real_ffi_pi.json"
+  },
+  "date": "2026-09-04"
+}
