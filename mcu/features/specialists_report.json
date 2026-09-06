@@ -1,0 +1,38 @@
+{
+  "d": 12,
+  "hidden": 16,
+  "epochs": 25,
+  "design": "two per-source specialists, shared unified 12-dim space; provenance = deployment-time routing",
+  "models": {
+    "nsl": {
+      "source_rows": 148516,
+      "nonzero_rows_in": {
+        "train": 118812,
+        "test": 29704
+      },
+      "acc_keras_float": 0.9074872136116028,
+      "acc_keras_qat_pre_conv": 0.9122340679168701,
+      "acc_tflite_fp32": 0.90675,
+      "acc_tflite_int8": 0.90905,
+      "auroc_rough_int8": 0.9612072299096424,
+      "float32_bytes": 2616,
+      "int8_bytes": 2528,
+      "int8_penalty_vs_fp": -0.16
+    },
+    "unsw": {
+      "source_rows": 257675,
+      "nonzero_rows_in": {
+        "train": 206140,
+        "test": 51535
+      },
+      "acc_keras_float": 0.8519452810287476,
+      "acc_keras_qat_pre_conv": 0.8579994440078735,
+      "acc_tflite_fp32": 0.85,
+      "acc_tflite_int8": 0.85735,
+      "auroc_rough_int8": 0.9319963595682274,
+      "float32_bytes": 2636,
+      "int8_bytes": 2528,
+      "int8_penalty_vs_fp": -0.54
+    }
+  }
+}
