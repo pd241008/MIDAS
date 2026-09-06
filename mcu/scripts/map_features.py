@@ -20,7 +20,7 @@ import json, os
 
 from collections import OrderedDict
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(HERE)
 RAW = "/root/workspace/workspace/03-Code/Projects/Legacy/centralized_datasets/raw/nsl-kdd"
 NSL_KDD_TRAIN = os.path.join(RAW, "KDDTrain_raw.csv")

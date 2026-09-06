@@ -1,0 +1,62 @@
+{
+  "timestamp": "20260906T172327Z",
+  "script": "recalibrate_gamma.py",
+  "git_commit": "b03e4d7",
+  "config": {
+    "d": 12,
+    "W": 10,
+    "edge_operating_gamma_for_ref": 2.3061
+  },
+  "results": {
+    "experiment": "Items 9+10: gamma recalibration + FPR on MCU-tier data",
+    "note": "Edge gamma=2.3061 does not transfer (d=12 not 42, normalized overlap features, per-source specialists). gamma = clean benign epsilon_p P95 per source, W=10.",
+    "config": {
+      "d": 12,
+      "W": 10
+    },
+    "edge_operating_gamma_for_ref": 2.3061,
+    "sources": [
+      {
+        "name": "nsl",
+        "d": 12,
+        "w": 10,
+        "n_rows": 148516,
+        "n_clean_benign_windows": 255,
+        "gamma_operating_p95": 0.970044,
+        "fpr_at_operating_gamma": 0.05098,
+        "benign_epsilon_p_quantiles": {
+          "p50": 0.795177,
+          "p75": 0.861015,
+          "p90": 0.915565,
+          "p95": 0.970044
+        }
+      },
+      {
+        "name": "unsw",
+        "d": 12,
+        "w": 10,
+        "n_rows": 257675,
+        "n_clean_benign_windows": 84901,
+        "gamma_operating_p95": 0.612702,
+        "fpr_at_operating_gamma": 0.049999,
+        "benign_epsilon_p_quantiles": {
+          "p50": 0.462388,
+          "p75": 0.481366,
+          "p90": 0.547857,
+          "p95": 0.612702
+        }
+      }
+    ],
+    "fpr_note": "FPR computed on clean benign-only windows (all 10 rows benign), the paper-rule-consistent definition."
+  },
+  "extra": {
+    "params": {
+      "d": 12,
+      "w": 10,
+      "gamma_per_source": {
+        "nsl": 0.970044,
+        "unsw": 0.612702
+      }
+    }
+  }
+}
