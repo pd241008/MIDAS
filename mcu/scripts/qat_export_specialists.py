@@ -29,10 +29,11 @@ import tensorflow as tf
 from tensorflow_model_optimization.quantization.keras import quantize_model
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-FEATURES_DIR = os.path.join(HERE, "features")
+MCU_DIR = os.path.dirname(HERE)
+ROOT = os.path.dirname(MCU_DIR)
+FEATURES_DIR = os.path.join(MCU_DIR, "features")
 MODELS_DIR = os.path.join(ROOT, "models")
-WEIGHTS_DIR = os.path.join(HERE, "trained_weights")
+WEIGHTS_DIR = os.path.join(MCU_DIR, "trained_weights")
 
 D = 12
 HIDDEN = 16

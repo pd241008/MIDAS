@@ -162,6 +162,46 @@ than on x86_64, while the tail (p99/max) reflects warmup + noise, which is
 lower and tighter on the Pi. See `results/latency_reproducibility.json` for the
 full per-run breakdown; both platforms are comfortably ≤ 0.1 ms at the tail.
 
+## MCU Tier (`mcu/` + `configs/mcu_config.json`)
+
+The MCU tier mirrors the Edge tier's layout: host-side build/vulnerability scripts
+in `mcu/scripts/` (parallel to `shadow/`), timestamped result captures in
+`mcu/results/` (parallel to `shadow/results/`), trained surrogate weights in
+`mcu/trained_weights/`, diagnostics in `mcu/scratch/`, the TFLM firmware
+targeting the STM32F407VG Discovery board (Cortex-M4F, 168 MHz, 192 KB SRAM,
+1 MB flash) in `mcu/fw/`, and shared feature artifacts in `mcu/features/`.
+
+Host-side pipeline (in run order):
+- **`map_features.py`** → **`unify_categoricals.py`** → **`fit_unified_scaler.py`**:
+  map NSL-KDD + UNSW-NB15 onto a shared 12-dim overlap feature space, unify
+  categorical encodings, fit the min/max scaler. Emits `mcu/features/unified_*.npy`.
+- **`downselect_dims.py`**: train a structure probe surrogate and pick the 12
+  retained dims (matching Edge `d=42` semantics at MCU scale).
+- **`qat_export_specialists.py`**: per-source QAT INT8 specialists
+  (`d=12→16→1`, tanh→sigmoid) exported to `models/mcu_specialist_{nsl,unsw}_{int8,fp32}.tflite`.
+- **`recalibrate_gamma.py`**: per-source `gamma` = clean-benign `epsilon_p` P95
+  (NSL 0.970, UNSW 0.613 — the Edge `gamma=2.3061` does not transfer), plus FPR.
+- **`adaptive_attacker_gate.py`**: instruction-accurate INT8 replica
+  (QAT-style straight-through) of the deployed TFLM specialists; reproduces the
+  Edge gate (vulnerable-basis naive-vs-adaptive `gap > 0.02` → fixed-basis).
+
+Every experimental script writes a timestamped, git-hashed capture to
+`mcu/results/<script>_<timestamp>.json` via `mcu/scripts/save_results.py`
+(mirror of `shadow/save_results.py`).
+
+All MCU-tier hyperparameters live in
+[`configs/mcu_config.json`](./configs/mcu_config.json) (mirror of
+`configs/edge_config.json`): `W=10`, `D=12`, per-source `gamma`, `lambda=1.0`,
+`k=2.0`, `delta_theta_max_deg=45`, `sla_budget_ms=10` (MCU SLA).
+
+### Firmware
+
+`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG (MathWorks flags no
+public DISCO-F407VG support; building the firmware is a pure host-side
+artifact). Build with `make` in `mcu/fw/`; produces `build/mcu_fw.{elf,bin,hex}`
+plus `build/mcu_fw.map`. Measured: **Flash 52.2 KB (5.1% of 1 MB), SRAM 16.8 KB
+(8.8% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each.
+
 ## Tests
 
 ```bash
@@ -178,7 +218,8 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [x] PyTorch surrogate → TFLite export (float32 / fp16 / dynamic-int8 / full-int8)
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
-- [ ] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate), TFLM conversion, cycle counts
+- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (52.2 KB flash / 16.8 KB SRAM)
+- [ ] MCU tier: host-side cycle model (estimate 168 MHz invocation latency from int8 op counts; on-board DWT unmeasured — hardware dropped)
 - [ ] Experimental results (partially populated in `results/`)
 
 ## License
