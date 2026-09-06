@@ -210,6 +210,10 @@ def main():
     np.save(os.path.join(HERE, "features", "unified_ranges.npy"), (maxs - mins).astype(np.float32))
     np.save(os.path.join(HERE, "features", "unified_features_all.npy"), X_all.astype(np.float32))
     np.save(os.path.join(HERE, "features", "unified_features_norm.npy"), X_all_n.astype(np.float32))
+    y_all = np.concatenate([y_nsl, y_unsw])
+    np.save(os.path.join(HERE, "features", "unified_labels.npy"), y_all)
+    np.save(os.path.join(HERE, "features", "unified_provenance.npy"),
+            np.concatenate([np.zeros(len(y_nsl), np.int8), np.ones(len(y_unsw), np.int8)]))
 
     # MCU budget report (192 KB SRAM). Ring buffer = W*4*d bytes (W=10).
     W = 10
