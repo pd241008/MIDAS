@@ -1,0 +1,170 @@
+{
+  "direction": "NSL-KDD <-> UNSW-NB15 (Midas d=42)",
+  "curated_features": [
+    {
+      "nsl_kdd": "duration",
+      "unsw": "dur",
+      "kind": "EXACT",
+      "semantics": "connection duration (s)",
+      "order": 0
+    },
+    {
+      "nsl_kdd": "protocol_type",
+      "unsw": "proto",
+      "kind": "EXACT",
+      "semantics": "transport protocol (tcp/udp/icmp/...)",
+      "order": 1
+    },
+    {
+      "nsl_kdd": "service",
+      "unsw": "service",
+      "kind": "EXACT",
+      "semantics": "application service on dst port",
+      "order": 2
+    },
+    {
+      "nsl_kdd": "src_bytes",
+      "unsw": "sbytes",
+      "kind": "EXACT",
+      "semantics": "bytes source -> dest",
+      "order": 3
+    },
+    {
+      "nsl_kdd": "dst_bytes",
+      "unsw": "dbytes",
+      "kind": "EXACT",
+      "semantics": "bytes dest -> source",
+      "order": 4
+    },
+    {
+      "nsl_kdd": "flag",
+      "unsw": "state",
+      "kind": "ANALOG",
+      "semantics": "TCP connection state (SF/CON... vs S0/REJ...)",
+      "order": 5
+    },
+    {
+      "nsl_kdd": "land",
+      "unsw": "is_sm_ips_ports",
+      "kind": "ANALOG",
+      "semantics": "src==dst ip+port (land / rule-src-dst sm)",
+      "order": 6
+    },
+    {
+      "nsl_kdd": "count",
+      "unsw": "ct_srv_src",
+      "kind": "ANALOG",
+      "semantics": "connections to same dst host/service in window",
+      "order": 7
+    },
+    {
+      "nsl_kdd": "srv_count",
+      "unsw": "ct_srv_dst",
+      "kind": "ANALOG",
+      "semantics": "connections to same service in window",
+      "order": 8
+    },
+    {
+      "nsl_kdd": "dst_host_count",
+      "unsw": "ct_dst_ltm",
+      "kind": "ANALOG",
+      "semantics": "connections to same dst ip in window",
+      "order": 9
+    },
+    {
+      "nsl_kdd": "dst_host_same_src_port_rate",
+      "unsw": "ct_src_dport_ltm",
+      "kind": "ANALOG",
+      "semantics": "same source port -> dst port family",
+      "order": 10
+    },
+    {
+      "nsl_kdd": "dst_host_same_srv_rate",
+      "unsw": "ct_srv_src",
+      "kind": "ANALOG",
+      "semantics": "fraction same-service connections (host-based rate vs count)",
+      "order": 11
+    }
+  ],
+  "overlap_counts": {
+    "exact": 5,
+    "analog": 7,
+    "total_overlap": 12
+  },
+  "nsl_kdd_only": {
+    "count": 29,
+    "features": [
+      "wrong_fragment",
+      "urgent",
+      "hot",
+      "num_failed_logins",
+      "logged_in",
+      "num_compromised",
+      "root_shell",
+      "su_attempted",
+      "num_root",
+      "num_file_creations",
+      "num_shells",
+      "num_access_files",
+      "num_outbound_cmds",
+      "is_host_login",
+      "is_guest_login",
+      "serror_rate",
+      "srv_serror_rate",
+      "rerror_rate",
+      "srv_rerror_rate",
+      "same_srv_rate",
+      "diff_srv_rate",
+      "srv_diff_host_rate",
+      "dst_host_srv_count",
+      "dst_host_diff_srv_rate",
+      "dst_host_srv_diff_host_rate",
+      "dst_host_serror_rate",
+      "dst_host_srv_serror_rate",
+      "dst_host_rerror_rate",
+      "dst_host_srv_rerror_rate"
+    ]
+  },
+  "unsw_only": {
+    "count": 31,
+    "features": [
+      "spkts",
+      "dpkts",
+      "rate",
+      "sttl",
+      "dttl",
+      "sload",
+      "dload",
+      "sloss",
+      "dloss",
+      "sinpkt",
+      "dinpkt",
+      "sjit",
+      "djit",
+      "swin",
+      "stcpb",
+      "dtcpb",
+      "dwin",
+      "tcprtt",
+      "synack",
+      "ackdat",
+      "smean",
+      "dmean",
+      "trans_depth",
+      "response_body_len",
+      "ct_state_ttl",
+      "ct_dst_sport_ltm",
+      "ct_dst_src_ltm",
+      "ct_ftp_cmd",
+      "ct_flw_http_mthd",
+      "ct_src_ltm",
+      "is_ftp_login"
+    ]
+  },
+  "dimensionality": {
+    "nsl_kdd": 41,
+    "unsw_d42": 42,
+    "naive_union": 71,
+    "overlap_only": 12
+  }
+}

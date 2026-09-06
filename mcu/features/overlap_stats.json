@@ -1,0 +1,23 @@
+{
+  "nsl_rows": 148516,
+  "unsw_rows": 257675,
+  "nsl_positive": 71463,
+  "unsw_positive": 164675,
+  "nsl_negative": 77053,
+  "unsw_negative": 93000,
+  "overlap_d": 12,
+  "minmax_per_feature": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ]
+}
