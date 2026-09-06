@@ -1,0 +1,60 @@
+{
+  "feature_cols": [
+    "dur<-duration",
+    "proto<-protocol_type",
+    "service<-service",
+    "state<-flag",
+    "sbytes<-src_bytes",
+    "dbytes<-dst_bytes",
+    "is_sm_ips_ports<-land",
+    "ct_srv_src<-count",
+    "ct_srv_dst<-srv_count",
+    "ct_dst_ltm<-dst_host_count",
+    "ct_src_dport_ltm<-dst_host_same_src_port_rate",
+    "ct_srv_src<-dst_host_same_srv_rate"
+  ],
+  "mins": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "maxs": [
+    57715.0,
+    1.0,
+    1.2857142857142858,
+    0.36363636363636365,
+    1379963888.0,
+    1309937401.0,
+    1.0,
+    511.0,
+    511.0,
+    255.0,
+    59.0,
+    63.0
+  ],
+  "d": 12,
+  "overlap_anchor": [
+    "dur<-duration",
+    "proto<-protocol_type",
+    "service<-service",
+    "state<-flag",
+    "sbytes<-src_bytes",
+    "dbytes<-dst_bytes",
+    "is_sm_ips_ports<-land",
+    "ct_srv_src<-count",
+    "ct_srv_dst<-srv_count",
+    "ct_dst_ltm<-dst_host_count",
+    "ct_src_dport_ltm<-dst_host_same_src_port_rate",
+    "ct_srv_src<-dst_host_same_srv_rate"
+  ],
+  "note": "joint fit over NSL-KDD+UNSW-NB15 raw overlap feature values"
+}
