@@ -1,21 +1,25 @@
 {
   "experiment": "Production-FFI-classifier deployment numbers (Edge tier). Consolidates latency, throughput, and FPR measured against / agreed for the REAL production TFLite FFI classifier (models/classifier_float32.tflite, d=42), not the surrogate.",
   "basis_notes": {
-    "latency": "x86 dev values are from the fresh real-TFLite phase_latency run (#6 pipeline driven with EDGE_MODEL_PATH, real classifier). The prior #6 '0.1029 ms' figure used MockModel + artificial sleep and is superseded. Pi aarch64 real-model phase-split confirmation is PENDING (Pi link down at measurement time).",
+    "latency": "x86 dev and Pi aarch64 values are from the fresh real-TFLite phase_latency run (#6 pipeline driven with EDGE_MODEL_PATH, real classifier). The prior #6 '0.1029 ms' figure used MockModel + artificial sleep and is superseded. Pi aarch64 real-model phase-split CONFIRMED on-device (results/pi/phase_split_latency_real_ffi_pi.json), p50/p99 both 0.0014 ms — even tighter than x86, matching the documented p50/p99 behavior.",
     "throughput": "#5 already ran the REAL TFLite classifier on the Pi at maximum offered load; those aarch64 numbers are authoritative for throughput/SLA.",
     "fpr": "The Logarithmic-phase trigger is an epsilon_p > gamma GEOMETRY rule (features-only), so it is classifier-independent: the real-classifier FPR equals the surrogate measured value by construction.",
     "memory": "1,680 B feature footprint (W x 4 x d = 10 x 4 x 42); earlier 1,200 B row assumed d=30."
   },
   "latency_ms": {
     "phase_split_real_tflite_x86": {
-      "archimedean": { "p50": 0.0020, "p95": 0.0031, "p99": 0.0124, "max": 0.1980, "n": 6352, "label": "benign phase window, full 3-thread pipeline, real TFLite FFI classifier" },
-      "logarithmic": { "p50": 0.0021, "p95": 0.0026, "p99": 0.0070, "max": 0.0750, "n": 6448, "label": "adversarial (rotation-clamped) phase window, same pipeline" }
+      "archimedean": { "p50": 0.0020, "p95": 0.0031, "p99": 0.0124, "max": 0.1980, "n": 6352, "label": "benign phase window, full 3-thread pipeline, real TFLite FFI classifier (x86 dev)" },
+      "logarithmic": { "p50": 0.0021, "p95": 0.0026, "p99": 0.0070, "max": 0.0750, "n": 6448, "label": "adversarial (rotation-clamped) phase window, same pipeline (x86 dev)" }
+    },
+    "phase_split_real_tflite_pi": {
+      "archimedean": { "p50": 0.0014, "p95": 0.0014, "p99": 0.0014, "max": 0.0541, "n": 6352, "label": "same pipeline on Raspberry Pi 5 aarch64 A76 (on-device, CONFIRMED)" },
+      "logarithmic": { "p50": 0.0014, "p95": 0.0014, "p99": 0.0014, "max": 0.0152, "n": 6448, "label": "same pipeline on Raspberry Pi 5 aarch64 A76 (on-device, CONFIRMED)" }
     },
     "sla_load_test_pi_compute_path": {
       "p50": 0.001371, "p95": 0.002074, "p99": 0.002093, "max": 0.365407, "mean": 0.001565,
       "label": "on-device Pi 5, compute path only (defense->rotation->TFLite), real classifier"
     },
-    "conclusion": "Every real-classifier latency figure (p50 ~0.002 ms, p99 ~0.01 ms) is orders of magnitude under the 50 ms Edge SLA; the SLA is non-binding."
+    "conclusion": "Every real-classifier latency figure (x86 p50 ~0.002 ms; Pi p50/p99 0.0014 ms) is orders of magnitude under the 50 ms Edge SLA; the SLA is non-binding. On-device Pi confirms the aarch64 number."
   },
   "throughput_pi": {
     "total_queries": 50000,
@@ -32,9 +36,7 @@
     "note": "Gamma = benign epsilon_p P95 per paper rule; FPR 5.01% at operating gamma. Classifier-independent geometry trigger.",
     "n_clean_benign_windows": 36973
   },
-  "pending": [
-    "Pi aarch64 real-TFLite phase-split latency confirmation (drive the same phase_latency run on the Pi via pi_push + cargo build; x86 values above are expected to replicate, as gate gap does: x86 0.388 vs Pi 0.396)."
-  ],
+  "pending": [],
   "files": {
     "this": "results/pi/prod_ffi_deployment.json",
     "phase_latency_bin": "edge/src/bin/phase_latency.rs (EDGE_MODEL_PATH support added)",
