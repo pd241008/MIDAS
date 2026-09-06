@@ -1,0 +1,47 @@
+{
+  "candidates": [
+    {
+      "d": 7,
+      "acc_joint": 0.8264634013175964,
+      "acc_nsl": 0.9038352966308594,
+      "acc_unsw": 0.7818686366081238,
+      "features": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "ring_buffer_bytes": 280,
+      "note": "5 EXACT + state + is_sm_ips_ports"
+    },
+    {
+      "d": 12,
+      "acc_joint": 0.8898941874504089,
+      "acc_nsl": 0.9390435814857483,
+      "acc_unsw": 0.8615659475326538,
+      "features": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "ring_buffer_bytes": 480,
+      "note": "full 12-anchor overlap"
+    }
+  ],
+  "sram_budget_bytes": 196608,
+  "w": 10,
+  "selected": 12,
+  "decision": "selected d=12 (full 12-anchor overlap) acc_joint=0.8899 - best fit under 192 KB (ring 480 B)"
+}
