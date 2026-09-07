@@ -15,11 +15,12 @@
 #define SCB             ((volatile uint32_t *)(SCS_BASE + 0x0D00UL))
 #define SCB_CPACR       (*(volatile uint32_t *)(SCS_BASE + 0x0888UL))  /* CPACR */
 
-/* DWT cycle counter (for profiling) */
-#define DWT             ((volatile uint32_t *)(SCS_BASE + 0x0100UL))
-#define DWT_CYCCNT      (*(volatile uint32_t *)(SCS_BASE + 0x0104UL))
-#define DWT_CTRL        (*(volatile uint32_t *)(SCS_BASE + 0x0000UL))
-#define DEMCR           (*(volatile uint32_t *)(SCS_BASE + 0x0000UL + 0x00FCUL))
+/* DWT cycle counter (for profiling): base is 0xE0001000, NOT SCS+0x100 */
+#define DWT_BASE        0xE0001000UL
+#define DWT             ((volatile uint32_t *)(DWT_BASE))
+#define DWT_CYCCNT      (*(volatile uint32_t *)(DWT_BASE + 0x0004UL))
+#define DWT_CTRL        (*(volatile uint32_t *)(DWT_BASE + 0x0000UL))
+#define DEMCR           (*(volatile uint32_t *)(SCS_BASE + 0x00FCUL))
 
 /* ---- Peripheral base addresses ---- */
 #define PERIPH_BASE     0x40000000UL
@@ -73,7 +74,12 @@ typedef struct {
 
 #define USART2  ((USART_TypeDef *)USART2_BASE)
 
-/* DMA2 (AHB1, base 0x40026000) — USART2_RX = DMA2 Stream5 Channel4 */
+/* DMA (AHB1).
+ * Took the off-by-unit entry table: USART2_RX = DMA1 Stream5 Channel4.
+ * REAL stream offsets: S0=0x10 S1=0x28 S2=0x40 S3=0x58 S4=0x70 S5=0x88
+ * S6=0xA0 S7=0xB8. (The old "DMA2_Stream5" = DMA1_BASE+0xA0 actually hit
+ * DMA1 Stream6 = USART2_TX; with DMA1 unclocked all writes were dropped.)
+ */
 typedef struct {
     volatile uint32_t CR;
     volatile uint32_t NDTR;
@@ -83,8 +89,10 @@ typedef struct {
     volatile uint32_t FCR;
 } DMA_Stream_TypeDef;
 
-#define DMA2_BASE       (AHB1_BASE + 0x6000UL)
-#define DMA2_Stream5    ((DMA_Stream_TypeDef *)(DMA2_BASE + 0x00A0UL))
+#define DMA1_BASE       (AHB1_BASE + 0x6000UL)   /* 0x40026000 */
+#define DMA2_BASE       (AHB1_BASE + 0x6400UL)   /* 0x40026400 */
+#define DMA1_Stream5    ((DMA_Stream_TypeDef *)(DMA1_BASE + 0x0088UL))
+#define DMA2_Stream5    ((DMA_Stream_TypeDef *)(DMA2_BASE + 0x0088UL))
 
 /* RCC_CR bits */
 #define RCC_CR_HSION   (1UL << 0)
@@ -106,7 +114,7 @@ typedef struct {
 /* RCC_AHB1ENR bits */
 #define RCC_AHB1ENR_GPIOAEN    (1UL << 0)
 #define RCC_AHB1ENR_GPIODEN    (1UL << 3)
-#define RCC_AHB1ENR_DMA2EN     (1UL << 22)
+#define RCC_AHB1ENR_DMA1EN     (1UL << 21)
 
 /* RCC_APB1ENR bits */
 #define RCC_APB1ENR_USART2EN   (1UL << 17)

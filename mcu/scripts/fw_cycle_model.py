@@ -17,6 +17,10 @@ Cost model (conservative-to-typical, cycles):
   LOGISTIC/TANH   : 48 per output element (int8 lookup + lerp)
   interpreter     : 2000 per Invoke (dispatch, arena, tensor plumbing)
 CYC_MAC ∈ {3 (optimistic), 6 (typical), 10 (conservative)}.
+
+On-device ground truth now exists: the routing gate, delta-theta defense and
+fixed-basis rotation are implemented in mcu/fw/src/main.cc and every pipeline
+stage is DWT-measured over 50 frames (see MEASURED below).
 """
 import math
 import os
@@ -61,6 +65,23 @@ CYC_ROTATE = 4 * 12 + 120   # 4d + angle bookkeeping for d=12
 CYC_GATE_LOGISTIC_LUT = 60  # sigmoid from a small LUT (arguably swappable
                             # for quantized exp, same order) once per frame
 GATE_DIMS = 12
+
+# On-device ground truth (DISCO-F407VG, DWT, 50 frames @ 168.56 MHz): every
+# defense stage LIVE in firmware main.cc. Mean cycles:
+#   T_sense  : DMA IDLE handler + ASCII parse + window push + quantize (~4705)
+#   T_theta  : windowed penetration + rotation_angle                      (284)
+#   T_gate   : folded 12x1 FC + logistic LUT + route                     (117)
+#   T_rotate : fixed-basis Givens (cos/sin via newlib; model's 168 cyc
+#              underestimates trig)                                      (839)
+#   T_inf    : routed INT8 specialist Invoke (rotated input; actual
+#              per-feature cost depends on activation sparsity)         (~16,320)
+# Full path = 22,266 cyc mean = 0.1321 ms = 1.32% of the 10 ms SLA.
+MEASURED = {
+    "stages_cycles": {"T_sense": 4705.0, "T_theta": 284.3, "T_gate": 117.0,
+                      "T_rotate": 839.1, "T_inf": 16320.3},
+    "full_path_cycles": 22265.7, "full_path_ms": 0.1321,
+    "sla_ratio_pct": 1.321, "n_frames": 50,
+    "route_split": {"NSL_specialist": 25, "UNSW_specialist": 25}}
 
 
 def tensor_dims(t):
@@ -175,7 +196,19 @@ def main():
                   f"gate {st['T_gate']:.4f} | rot {st['T_rotate']:.4f} | T_inf {st['T_inf']:.4f}]")
 
     report = {"experiment": "Item 6+cycle model: analytical INT8 inference latency on STM32F407 @168 MHz",
-              "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_gate (routing gate, 12x1 FC + logistic LUT), T_rotate. WARNING: T_theta/T_gate/T_rotate are modeled from the Python defense / host-trained gate (not yet implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
+              "note": "Analytical estimates reconciled against FULL-PIPELINE on-device DWT ground truth (DISCO-F407VG over SWD). The routing gate, delta-theta defense and fixed-basis rotation are now LIVE in firmware (mcu/fw/src/main.cc) and each stage is DWT-measured over 50 frames with 4 real feature seeds (25 routed to each specialist): T_sense 4,705 cyc (DMA IDLE handler + ASCII parse + window + quantize), T_theta 284 cyc (windowed penetration + rotation_angle), T_gate 117 cyc (folded 12x1 FC + logistic LUT + route; standardization folded into weights offline - bit-match verified), T_rotate 839 cyc (fixed-basis Givens; newlib cosf/sinf dominate - the analytical 168 cyc underestimates trig 5x), T_inf mean 16,320 cyc (routed specialist on the rotated input; input-dependent, per-route means 16,319 NSL / 16,322 UNSW). Full path 22,266 cyc = 0.1321 ms = 1.32% of the 10 ms SLA. The prior dummy-input T_inf measurement (15,719/15,718 cyc) is retained below for reference. Counter certified earlier: DWT vs SysTick within 3 cyc over 8.43e6; rate 168.56 MHz. GPIO-toggle-vs-DWT scope leg still needs an external logic analyzer.",
+              "measured_on_device": {
+                  "board": "DISCO-F407VG via ST-LINK/V2 (usbipd) + OpenOCD SWD",
+                  "method": "firmware DWT_CYCCNT per frame around each defense stage into SRAM (g_stage_cyc[5][50] + g_route[50]); 50 frames, 4 real feature seeds cycled; read back over SWD.",
+                  "stages_cycles_mean": MEASURED["stages_cycles"],
+                  "full_path_cycles_mean": MEASURED["full_path_cycles"],
+                  "full_path_ms": MEASURED["full_path_ms"],
+                  "sla_ratio_pct": MEASURED["sla_ratio_pct"],
+                  "route_split": MEASURED["route_split"],
+                  "T_inf_by_route": {"NSL_specialist_mean": 16318.6, "UNSW_specialist_mean": 16322.0},
+                  "invoke_only_dummy_input_mean": {"nsl": 15719.0, "unsw": 15718.0},
+                  "overhead_ratio_vs_analytical_typical_full_path": 2.18,
+                  "overhead_ratio_vs_analytical_typical_invoke_only": 2.648},
               "clk_hz": CLK_HZ, "sla_budget_ms": SLA_MS,
               "cost_model": {"cyc_mac": CYC_MAC_SCEN, "fc_base": CYC_FC_BASE,
                              "quant_per_out": CYC_QUANT, "activation_elem": CYC_ACTIVATION_ELEM,

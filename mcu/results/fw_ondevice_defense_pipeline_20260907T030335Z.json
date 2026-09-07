@@ -1,0 +1,65 @@
+{
+  "board": "DISCO-F407VG",
+  "method": "firmware DWT_CYCCNT per stage per frame, 50 frames (4 real feature seeds cycled), read back over SWD. Defense + gate + ingest LIVE on-device (main.cc). Counter certified earlier: DWT vs SysTick within 3 cyc over 8.43e6; rate 168.56 MHz.",
+  "stages_cycles": {
+    "T_sense": {
+      "n": 50,
+      "min": 4698,
+      "max": 4707,
+      "mean": 4705.0,
+      "stdev": 3.172
+    },
+    "T_theta": {
+      "n": 50,
+      "min": 28,
+      "max": 297,
+      "mean": 284.3,
+      "stdev": 52.794
+    },
+    "T_gate": {
+      "n": 50,
+      "min": 117,
+      "max": 117,
+      "mean": 117.0,
+      "stdev": 0.0
+    },
+    "T_rotate": {
+      "n": 50,
+      "min": 722,
+      "max": 844,
+      "mean": 839.1,
+      "stdev": 23.907
+    },
+    "T_inf": {
+      "n": 50,
+      "min": 15729,
+      "max": 16955,
+      "mean": 16320.3,
+      "stdev": 430.533
+    }
+  },
+  "stages_ms": {
+    "T_sense": 0.0279,
+    "T_theta": 0.0017,
+    "T_gate": 0.0007,
+    "T_rotate": 0.005,
+    "T_inf": 0.0968
+  },
+  "route_split": {
+    "NSL_specialist": 25,
+    "UNSW_specialist": 25
+  },
+  "T_inf_by_route": {
+    "NSL_mean": 16318.6,
+    "UNSW_mean": 16322.0
+  },
+  "full_path_cycles": {
+    "n": 50,
+    "min": 21407,
+    "max": 22919,
+    "mean": 22265.7,
+    "stdev": 447.29
+  },
+  "full_path_ms": 0.1321,
+  "sla_ratio": 1.321
+}
