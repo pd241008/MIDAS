@@ -292,6 +292,14 @@ leg of the cross-check (a scope-timed pulse) still needs an external logic
 analyzer, but the on-chip DWT↔SysTick agreement and the host-clock rate probe
 already certify the counter.
 
+## Docs
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — edge runtime architecture (3-thread pipeline, defense math).
+- [`docs/adr/`](docs/adr/) — architecture decision records (routing-gate deployment, gate-weight folding, defense-pipeline instrumentation, DMA1 S5 ingest, fixed rotation basis).
+- [`docs/postmortems/`](docs/postmortems/) — measurement/hardware failure post-mortems (DWT base bug, DMA stream/clock bug, NDTR-write rule, DWT window code-sinking, OpenOCD sampling stall).
+- [`docs/mcu-measurement-procedure.md`](docs/mcu-measurement-procedure.md) — reproducible recipe + published stage table for the on-device DWT measurement.
+- [`docs/paper_edits.md`](docs/paper_edits.md) — prose change log for the ICCD-2026 draft.
+
 ## Tests
 
 ```bash
