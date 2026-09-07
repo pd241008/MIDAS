@@ -6,6 +6,12 @@
   "replica": "int8 weights extracted from models/mcu_specialist_*.tflite, differentiable ST-quant",
   "fixed_basis_defense": "Givens rotation in fixed PCA-2 basis (theta from epsilon_p)",
   "manifold": "mcu/features/manifold_basis.json (PCA-2 of clean benign unified d=12)",
+  "recheck": "mcu/features/gate_recheck_report.json (N=800, seed 42, fresh pools; Edge rule |gap|>0.02 AND gap/SE>1.0)",
+  "verdict": {
+    "nsl": "PASS (caveat): coupled-basis vulnerability strongly confirmed at N=800 (gaps +0.153..+0.326, Gap/SE 9.08..15.15). Fixed-basis mostly flat; eps0.1_50 N=200 +0.065 collapsed to noise (-0.006). Residual small adaptive edge persists at eps0.2/100 (+0.025, Gap/SE 1.33) - fixed basis not perfectly flat at the harshest budget.",
+    "unsw": "NOT CONFIRMED (reportable finding): coupled-basis gap absent at N=800 (max +0.019, Gap/SE<=0.75; N=200 +0.065 collapsed to noise). The known-vulnerability signal does not reproduce on UNSW-sourced data, so the gate does NOT pass for UNSW. Harness sensitivity is independently validated by the NSL positive control in the same battery.",
+    "validity": "Harness sensitivity validated by NSL positive control (Gap/SE up to 15); replicas bit-match TFLite interpreter (600/600 per mcu/results/check_replica_fidelity)."
+  },
   "nsl": {
     "vulnerable_basis": {
       "eps0.05_20": {
@@ -61,7 +67,7 @@
         "gap": 0.065
       }
     },
-    "gate_passed": true,
+    "gate_passed": false,
     "fixed_basis": {
       "eps0.05_20": {
         "naive_asr": 0.975,
