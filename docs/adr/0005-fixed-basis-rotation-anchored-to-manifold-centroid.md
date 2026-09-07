@@ -35,6 +35,8 @@ then feeds the rotated vector to the routed specialist.
 
 ## Follow-ups
 
-- Replace the mean-centroid anchor with the host's real PCA-2 once computed
-  (`compute_fixed_basis` TODO); then regenerate `g_b0`/`g_b1` — the firmware
-  path is unchanged.
+- Replace the mean-centroid anchor with the on-disk PCA-2 basis. That basis
+  **already exists** (`mcu/features/manifold_basis.json`, from
+  `build_manifold_basis`; `edge/src/rotation_thread.rs` computes the same
+  `pca2` live via `core/src/manifold.rs`): regenerating `g_b0`/`g_b1` is only
+  a constant re-embed from that file — the firmware rotation path is unchanged.
