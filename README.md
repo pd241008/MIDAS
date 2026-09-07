@@ -184,6 +184,25 @@ Host-side pipeline (in run order):
 - **`adaptive_attacker_gate.py`**: instruction-accurate INT8 replica
   (QAT-style straight-through) of the deployed TFLM specialists; reproduces the
   Edge gate (vulnerable-basis naive-vs-adaptive `gap > 0.02` → fixed-basis).
+- **`recheck_gate_n800.py`**: Edge sample-size discipline (mirror of
+  `shadow/recheck_n200.py`) — every gate config re-run on fresh seeded pools
+  at N=800 with the `|gap|>0.02 AND gap/SE>1.0` rule.
+- **`fw_cycle_model.py`**: analytical per-invocation latency from the actual
+  INT8 op graphs (TFLite flatbuffer) on Cortex-M4F @168 MHz.
+
+Gate verdict (committed in `mcu/features/attacker_gate_report.json` +
+`mcu/results/recheck_gate_n800_*.json`), N=200 gate then N=800 recheck:
+
+| Source | Coupled-basis (known-vuln control) | Fixed-basis | Verdict |
+|--------|------------------------------------|-------------|---------|
+| **NSL** (γ=0.970) | gap +0.153..+0.326, **Gap/SE 9–15** | +0.025..+0.045 → +0.025..0 (eps0.2_100 residual small edge, Gap/SE 1.33) | **PASS** (caveat: not perfectly flat at harshest budget) |
+| **UNSW** (γ=0.613) | gap ≤0.065 at N=200 → **collapses to noise** at N=800 (max +0.019, Gap/SE ≤0.75) | flat | **NOT confirmed** (reportable per-source finding — coupled-basis vulnerability absent on UNSW data; harness sensitivity validated by the NSL control) |
+
+The NSL specialist is validated: its replica bit-matches the TFLite
+interpreter (600/600 samples), and the known-vulnerability signal registers
+unambiguously at high N. The UNSW specialist shows no attacker-coupled-basis
+advantage, which is reported as a per-source behavioral difference — not an
+absence claim for the harness as a whole.
 
 Every experimental script writes a timestamped, git-hashed capture to
 `mcu/results/<script>_<timestamp>.json` via `mcu/scripts/save_results.py`
@@ -199,8 +218,15 @@ All MCU-tier hyperparameters live in
 `mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG (MathWorks flags no
 public DISCO-F407VG support; building the firmware is a pure host-side
 artifact). Build with `make` in `mcu/fw/`; produces `build/mcu_fw.{elf,bin,hex}`
-plus `build/mcu_fw.map`. Measured: **Flash 52.2 KB (5.1% of 1 MB), SRAM 16.8 KB
-(8.8% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each.
+plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
+(9.1% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each. Hardware
+I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
+circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
+feeds a W=10 float window for the defense, and quantizes the latest vector
+into the INT8 input tensor. Estimated per-invocation latency
+(`fw_cycle_model.py`): **~0.035 ms typical (0.35% of the 10 ms SLA)** —
+host-side analytical estimate; on-board DWT cycle counts are unmeasured
+because the hardware was dropped.
 
 ## Tests
 
