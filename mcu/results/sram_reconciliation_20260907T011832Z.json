@@ -1,0 +1,33 @@
+{
+  "timestamp": "20260907T011832Z",
+  "script": "sram_reconciliation.py",
+  "git_commit": "fcda0f4",
+  "config": {
+    "d": 12
+  },
+  "results": {
+    "on_device_sram": {
+      "scratch (TFLM tensor arena)": 16384,
+      "middleware (MicroInterpreter + resolver)": 344,
+      "newlib/stdio (FILE, reent)": 316,
+      "live ingest: DMA byte ring": 256,
+      "live ingest: parser + input": 100,
+      "state/pointers/other": 40
+    },
+    "on_device_sram_total": 17532,
+    "flash_total": 54388,
+    "midas_tier_d12": {
+      "ring_buf (W=10 x d=12 x f32)": 480,
+      "C_base (d^2 x f32)": 576,
+      "C_rotated (d^2 x f32)": 576,
+      "state (window cnt, gamma, lambda, k)": 48
+    },
+    "paper_ref_d42": {
+      "C_base+C_rotated @d=42": 14112,
+      "7.3 % of 192 KB": 14352
+    }
+  },
+  "extra": {
+    "interpretation": "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 (14,112 B = 7.35%). Device SRAM (17.1 KB incl 16 KB TFLM arena) is a DIFFERENT quantity. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier (ring+c matrices+state) + routing gate = ~1.72 KB incremental over the TFLM baseline."
+  }
+}

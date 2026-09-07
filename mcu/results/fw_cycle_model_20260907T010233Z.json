@@ -1,0 +1,208 @@
+{
+  "timestamp": "20260907T010233Z",
+  "script": "fw_cycle_model.py",
+  "git_commit": "b89e449",
+  "config": {
+    "clk_hz": 168000000.0,
+    "sla_budget_ms": 10.0
+  },
+  "results": {
+    "models": {
+      "nsl": {
+        "model": "mcu_specialist_nsl_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7360,
+            "latency_ms": 0.0438,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10084,
+            "latency_ms": 0.06,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.006,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 13856,
+            "latency_ms": 0.0825,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0082,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      },
+      "unsw": {
+        "model": "mcu_specialist_unsw_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7360,
+            "latency_ms": 0.0438,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10084,
+            "latency_ms": 0.06,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.006,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 13856,
+            "latency_ms": 0.0825,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0082,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      }
+    }
+  },
+  "extra": {
+    "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_rotate. WARNING: T_theta/T_rotate are modeled from the Python defense (not implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute)."
+  }
+}

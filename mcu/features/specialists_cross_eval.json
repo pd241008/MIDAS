@@ -1,0 +1,64 @@
+{
+  "experiment": "Section VII-A: per-source held-out accuracy of deployed INT8 specialists",
+  "d": 12,
+  "hidden": 16,
+  "test_split": "80/20 per source, seed 42",
+  "n_per_cell": 20000,
+  "rows_test_N": {
+    "nsl": {
+      "n": 29704,
+      "pos_rate": 0.4743
+    },
+    "unsw": {
+      "n": 51535,
+      "pos_rate": 0.6392
+    }
+  },
+  "accuracy": {
+    "nsl": {
+      "nsl": {
+        "acc": 0.9091,
+        "auroc_rough": 0.9612,
+        "n": 20000
+      },
+      "unsw": {
+        "acc": 0.3436,
+        "auroc_rough": 0.4159,
+        "n": 20000
+      }
+    },
+    "unsw": {
+      "nsl": {
+        "acc": 0.5213,
+        "auroc_rough": 0.0002,
+        "n": 20000
+      },
+      "unsw": {
+        "acc": 0.8578,
+        "auroc_rough": 0.9338,
+        "n": 20000
+      }
+    }
+  },
+  "same_source": {
+    "nsl": {
+      "acc": 0.9091,
+      "auroc_rough": 0.9612,
+      "n": 20000
+    },
+    "unsw": {
+      "acc": 0.8578,
+      "auroc_rough": 0.9338,
+      "n": 20000
+    }
+  },
+  "cross_delta": {
+    "nsl_specialist_on_unsw_vs_nsl": -0.5655,
+    "unsw_specialist_on_nsl_vs_unsw": -0.3365
+  },
+  "routed_deployment_accuracy": 0.8766,
+  "single_classifier_on_merged": {
+    "nsl_spec_merged": 0.5504,
+    "unsw_spec_merged": 0.7348
+  }
+}
