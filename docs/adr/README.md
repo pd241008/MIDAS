@@ -11,5 +11,6 @@ so paper claims and firmware behavior trace back to a written rationale.
 | [0003](0003-on-device-defense-pipeline-and-dwt-measurement.md) | Ported delta-theta defense + fixed-basis rotation into firmware; stage DWT counters in SRAM, read back over SWD | Accepted |
 | [0004](0004-dma1-stream5-for-usart2-rx-ingest.md) | USART2_RX ingest on **DMA1 Stream5 Ch4** circular ring + IDLE framing | Accepted |
 | [0005](0005-fixed-basis-rotation-anchored-to-manifold-centroid.md) | Offline-computed fixed rotation basis (centroid-`b0`, Gram-Schmidt `b1`) embedded in flash | Accepted |
+| [0006](0006-as-is-nsl-caveat-unsw-not-confirmed.md) | Keep NSL gate caveat (1.33σ fixed-basis residual) and UNSW "not confirmed" as reported per-source findings | Accepted |
 
 All decisions are dated 2026-09-07 unless otherwise noted.
