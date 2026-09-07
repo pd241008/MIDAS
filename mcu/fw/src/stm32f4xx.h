@@ -11,6 +11,7 @@
 #define SCS_BASE        0xE000E000UL
 #define SysTick         ((volatile uint32_t *)(SCS_BASE + 0x0010UL))
 #define NVIC_ICPR       ((volatile uint32_t *)(SCS_BASE + 0x0180UL))
+#define NVIC_ISER       ((volatile uint32_t *)(SCS_BASE + 0x0100UL))
 #define SCB             ((volatile uint32_t *)(SCS_BASE + 0x0D00UL))
 #define SCB_CPACR       (*(volatile uint32_t *)(SCS_BASE + 0x0888UL))  /* CPACR */
 
@@ -72,6 +73,19 @@ typedef struct {
 
 #define USART2  ((USART_TypeDef *)USART2_BASE)
 
+/* DMA2 (AHB1, base 0x40026000) — USART2_RX = DMA2 Stream5 Channel4 */
+typedef struct {
+    volatile uint32_t CR;
+    volatile uint32_t NDTR;
+    volatile uint32_t PAR;
+    volatile uint32_t M0AR;
+    volatile uint32_t M1AR;
+    volatile uint32_t FCR;
+} DMA_Stream_TypeDef;
+
+#define DMA2_BASE       (AHB1_BASE + 0x6000UL)
+#define DMA2_Stream5    ((DMA_Stream_TypeDef *)(DMA2_BASE + 0x00A0UL))
+
 /* RCC_CR bits */
 #define RCC_CR_HSION   (1UL << 0)
 #define RCC_CR_HSIRDY  (1UL << 1)
@@ -92,6 +106,7 @@ typedef struct {
 /* RCC_AHB1ENR bits */
 #define RCC_AHB1ENR_GPIOAEN    (1UL << 0)
 #define RCC_AHB1ENR_GPIODEN    (1UL << 3)
+#define RCC_AHB1ENR_DMA2EN     (1UL << 22)
 
 /* RCC_APB1ENR bits */
 #define RCC_APB1ENR_USART2EN   (1UL << 17)
@@ -106,10 +121,15 @@ typedef struct {
 #define USART_CR1_UE           (1UL << 13)
 #define USART_CR1_TE           (1UL << 3)
 #define USART_CR1_RE           (1UL << 2)
+#define USART_CR1_IDLEIE       (1UL << 4)
+
+/* USART_CR3 bits */
+#define USART_CR3_DMAR         (1UL << 6)
 
 /* USART_SR bits */
 #define USART_SR_TXE           (1UL << 7)
 #define USART_SR_TC            (1UL << 6)
 #define USART_SR_RXNE          (1UL << 5)
+#define USART_SR_IDLE          (1UL << 4)
 
 #endif /* STM32F4XX_H */
