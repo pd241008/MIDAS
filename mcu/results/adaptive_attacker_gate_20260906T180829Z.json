@@ -1,0 +1,95 @@
+{
+  "timestamp": "20260906T180829Z",
+  "script": "adaptive_attacker_gate.py",
+  "git_commit": "2290f8e",
+  "config": {
+    "W": 10,
+    "gamma": 0.612702,
+    "lambda": 1.0,
+    "k": 2.0,
+    "delta_theta_max": 0.7853981633974483
+  },
+  "results": {
+    "experiment": "Items 11+12: MCU adaptive-attacker gate on deployed int8 specialists",
+    "W": 10,
+    "d": 12,
+    "n_samples": 200,
+    "replica": "int8 weights extracted from models/mcu_specialist_*.tflite, differentiable ST-quant",
+    "fixed_basis_defense": "Givens rotation in fixed PCA-2 basis (theta from epsilon_p)",
+    "manifold": "mcu/features/manifold_basis.json (PCA-2 of clean benign unified d=12)",
+    "nsl": {
+      "vulnerable_basis": {
+        "eps0.05_20": {
+          "naive_asr": 0.345,
+          "adaptive_asr": 0.65,
+          "gap": 0.305
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.485,
+          "adaptive_asr": 0.845,
+          "gap": 0.36
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.77,
+          "adaptive_asr": 0.915,
+          "gap": 0.145
+        }
+      },
+      "gate_passed": true,
+      "fixed_basis": {
+        "eps0.05_20": {
+          "naive_asr": 0.975,
+          "adaptive_asr": 0.975,
+          "gap": 0.0
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.885,
+          "adaptive_asr": 0.95,
+          "gap": 0.065
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.765,
+          "adaptive_asr": 0.81,
+          "gap": 0.045
+        }
+      }
+    },
+    "unsw": {
+      "vulnerable_basis": {
+        "eps0.05_20": {
+          "naive_asr": 0.795,
+          "adaptive_asr": 0.795,
+          "gap": 0.0
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.7,
+          "adaptive_asr": 0.695,
+          "gap": -0.005
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.565,
+          "adaptive_asr": 0.63,
+          "gap": 0.065
+        }
+      },
+      "gate_passed": true,
+      "fixed_basis": {
+        "eps0.05_20": {
+          "naive_asr": 0.975,
+          "adaptive_asr": 0.99,
+          "gap": 0.015
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.895,
+          "adaptive_asr": 0.92,
+          "gap": 0.025
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.82,
+          "adaptive_asr": 0.865,
+          "gap": 0.045
+        }
+      }
+    }
+  }
+}

@@ -162,6 +162,72 @@ than on x86_64, while the tail (p99/max) reflects warmup + noise, which is
 lower and tighter on the Pi. See `results/latency_reproducibility.json` for the
 full per-run breakdown; both platforms are comfortably ≤ 0.1 ms at the tail.
 
+## MCU Tier (`mcu/` + `configs/mcu_config.json`)
+
+The MCU tier mirrors the Edge tier's layout: host-side build/vulnerability scripts
+in `mcu/scripts/` (parallel to `shadow/`), timestamped result captures in
+`mcu/results/` (parallel to `shadow/results/`), trained surrogate weights in
+`mcu/trained_weights/`, diagnostics in `mcu/scratch/`, the TFLM firmware
+targeting the STM32F407VG Discovery board (Cortex-M4F, 168 MHz, 192 KB SRAM,
+1 MB flash) in `mcu/fw/`, and shared feature artifacts in `mcu/features/`.
+
+Host-side pipeline (in run order):
+- **`map_features.py`** → **`unify_categoricals.py`** → **`fit_unified_scaler.py`**:
+  map NSL-KDD + UNSW-NB15 onto a shared 12-dim overlap feature space, unify
+  categorical encodings, fit the min/max scaler. Emits `mcu/features/unified_*.npy`.
+- **`downselect_dims.py`**: train a structure probe surrogate and pick the 12
+  retained dims (matching Edge `d=42` semantics at MCU scale).
+- **`qat_export_specialists.py`**: per-source QAT INT8 specialists
+  (`d=12→16→1`, tanh→sigmoid) exported to `models/mcu_specialist_{nsl,unsw}_{int8,fp32}.tflite`.
+- **`recalibrate_gamma.py`**: per-source `gamma` = clean-benign `epsilon_p` P95
+  (NSL 0.970, UNSW 0.613 — the Edge `gamma=2.3061` does not transfer), plus FPR.
+- **`adaptive_attacker_gate.py`**: instruction-accurate INT8 replica
+  (QAT-style straight-through) of the deployed TFLM specialists; reproduces the
+  Edge gate (vulnerable-basis naive-vs-adaptive `gap > 0.02` → fixed-basis).
+- **`recheck_gate_n800.py`**: Edge sample-size discipline (mirror of
+  `shadow/recheck_n200.py`) — every gate config re-run on fresh seeded pools
+  at N=800 with the `|gap|>0.02 AND gap/SE>1.0` rule.
+- **`fw_cycle_model.py`**: analytical per-invocation latency from the actual
+  INT8 op graphs (TFLite flatbuffer) on Cortex-M4F @168 MHz.
+
+Gate verdict (committed in `mcu/features/attacker_gate_report.json` +
+`mcu/results/recheck_gate_n800_*.json`), N=200 gate then N=800 recheck:
+
+| Source | Coupled-basis (known-vuln control) | Fixed-basis | Verdict |
+|--------|------------------------------------|-------------|---------|
+| **NSL** (γ=0.970) | gap +0.153..+0.326, **Gap/SE 9–15** | +0.025..+0.045 → +0.025..0 (eps0.2_100 residual small edge, Gap/SE 1.33) | **PASS** (caveat: not perfectly flat at harshest budget) |
+| **UNSW** (γ=0.613) | gap ≤0.065 at N=200 → **collapses to noise** at N=800 (max +0.019, Gap/SE ≤0.75) | flat | **NOT confirmed** (reportable per-source finding — coupled-basis vulnerability absent on UNSW data; harness sensitivity validated by the NSL control) |
+
+The NSL specialist is validated: its replica bit-matches the TFLite
+interpreter (600/600 samples), and the known-vulnerability signal registers
+unambiguously at high N. The UNSW specialist shows no attacker-coupled-basis
+advantage, which is reported as a per-source behavioral difference — not an
+absence claim for the harness as a whole.
+
+Every experimental script writes a timestamped, git-hashed capture to
+`mcu/results/<script>_<timestamp>.json` via `mcu/scripts/save_results.py`
+(mirror of `shadow/save_results.py`).
+
+All MCU-tier hyperparameters live in
+[`configs/mcu_config.json`](./configs/mcu_config.json) (mirror of
+`configs/edge_config.json`): `W=10`, `D=12`, per-source `gamma`, `lambda=1.0`,
+`k=2.0`, `delta_theta_max_deg=45`, `sla_budget_ms=10` (MCU SLA).
+
+### Firmware
+
+`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG (MathWorks flags no
+public DISCO-F407VG support; building the firmware is a pure host-side
+artifact). Build with `make` in `mcu/fw/`; produces `build/mcu_fw.{elf,bin,hex}`
+plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
+(9.1% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each. Hardware
+I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
+circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
+feeds a W=10 float window for the defense, and quantizes the latest vector
+into the INT8 input tensor. Estimated per-invocation latency
+(`fw_cycle_model.py`): **~0.035 ms typical (0.35% of the 10 ms SLA)** —
+host-side analytical estimate; on-board DWT cycle counts are unmeasured
+because the hardware was dropped.
+
 ## Tests
 
 ```bash
@@ -178,7 +244,9 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [x] PyTorch surrogate → TFLite export (float32 / fp16 / dynamic-int8 / full-int8)
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
-- [ ] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate), TFLM conversion, cycle counts
+- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
+- [x] MCU tier: host-side cycle model (analytical ~0.035 ms/invoke @168 MHz, 0.35% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT unmeasured — hardware dropped
+- [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 
 ## License

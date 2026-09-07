@@ -1,0 +1,29 @@
+{
+  "timestamp": "20260907T001152Z",
+  "script": "check_replica_fidelity.py",
+  "git_commit": "2290f8e",
+  "config": {
+    "n_per_source": 600,
+    "replica": "Int8SpecialistReplica (ST-quant, dequantized int8 weights)"
+  },
+  "results": {
+    "experiment": "MCU replica fidelity: int8 replica vs deployed TFLite",
+    "n_per_source": 600,
+    "nsl": {
+      "label_agreement": 1.0,
+      "label_flips": 0,
+      "max_abs_diff": 0.0,
+      "p95_abs_diff": 0.0,
+      "mean_abs_diff": 0.0,
+      "note": "residual = int8 weight-dequant/requant rounding noise near decision boundary"
+    },
+    "unsw": {
+      "label_agreement": 1.0,
+      "label_flips": 0,
+      "max_abs_diff": 0.0,
+      "p95_abs_diff": 0.0,
+      "mean_abs_diff": 0.0,
+      "note": "residual = int8 weight-dequant/requant rounding noise near decision boundary"
+    }
+  }
+}

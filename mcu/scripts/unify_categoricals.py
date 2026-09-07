@@ -23,7 +23,7 @@ import json, os
 
 import pandas as pd
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NSL_RAW = "/root/workspace/workspace/03-Code/Projects/Legacy/centralized_datasets/raw/nsl-kdd"
 UNSW_RAW = "/root/workspace/workspace/03-Code/Projects/Legacy/centralized_datasets/raw/unsw_nb15"
 
