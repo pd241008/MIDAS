@@ -61,71 +61,83 @@ def _init_from_int8(tag):
     return z
 
 
+# Per-tensor weight scales (from models/mcu_specialist_*_int8.tflite,
+# tensor quantization_parameters) so the dequantized replica matches the
+# deployed int8 decision boundary. w-scale relation: b_scale = s_in * s_w1.
+W_SCALES = {
+    "nsl": {"s_w1": 0.04612535, "s_w2": 0.02429635},
+    "unsw": {"s_w1": 0.09418254, "s_w2": 0.04263391},
+}
+
+
 class Int8SpecialistReplica(torch.nn.Module):
     """Differentiable int8-faithful replica of the TFLM specialist.
 
-    Straight-through quantization on activations/weights reproduces the int8
-    decision boundary while remaining differentiable for PGD.
+    Reconstructs the deployed int8 weights (dequantized with their real
+    per-tensor scales) and reproduces the int8 fixed-point path:
+        input -> FC1 (s_in x s_w1) -> requant(s_fc1out) -> tanh int8
+              -> FC2 (s_tanh x s_w2) -> requant(s_fc2pre) -> sigmoid int8
+    using QAT-style straight-through quantization (fake-quant in fwd,
+    identity gradient), so PGD sees the same boundary the silicon presents.
     """
 
     def __init__(self, tag, gamma_p95):
         super().__init__()
         z = _init_from_int8(tag)
         self.tag = tag
-
-        # Dequantized real weights (the deployed int8 weights, scaled back)
-        s_w1, zp_w1 = 0.0, 0
-        self.register_buffer("w1", torch.tensor(z["w1"].astype(np.float32)))
-        self.register_buffer("b1", torch.tensor(z["b1"].astype(np.float32)))
-        self.register_buffer("w2", torch.tensor(z["w2"].astype(np.float32)))
-        self.register_buffer("b2", torch.tensor(z["b2"].astype(np.float32)))
+        self.gamma = gamma_p95
 
         # Quantization params (from tflite, per tag)
         if tag == "nsl":
-            self.s_in, self.zp_in = 0.003921568859368563, -128   # input [0,1]->int8
-            self.s_fc1out, self.zp_fc1out = 0.035085760056972504, -2   # pre-tanh int8
-            self.s_tanh, self.zp_tanh = 0.0078125, 0              # tanh int8 (1/128)
-            self.s_fc2pre, self.zp_fc2pre = 0.08132143318653107, -25
-            self.s_out, self.zp_out = 0.00390625, -128            # sigmoid int8 (1/256)
+            self._s_in, self._zp_in = 0.003921568859368563, -128   # input [0,1]->int8
+            self._s_fc1out, self._zp_fc1out = 0.035085760056972504, -2   # pre-tanh int8
+            self._s_fc2pre, self._zp_fc2pre = 0.08132143318653107, -25
         else:
-            self.s_in, self.zp_in = 0.003921568859368563, -128
-            self.s_fc1out, self.zp_fc1out = 0.048389460891485214, 35
-            self.s_tanh, self.zp_tanh = 0.0078125, 0
-            self.s_fc2pre, self.zp_fc2pre = 0.07031682133674622, 13
-            self.s_out, self.zp_out = 0.00390625, -128
+            self._s_in, self._zp_in = 0.003921568859368563, -128
+            self._s_fc1out, self._zp_fc1out = 0.048389460891485214, 35
+            self._s_fc2pre, self._zp_fc2pre = 0.07031682133674622, 13
+        self._s_tanh, self._zp_tanh = 0.0078125, 0              # tanh int8 (1/128)
+        self._s_out, self._zp_out = 0.00390625, -128            # sigmoid int8 (1/256)
 
-        # Scale relations for fused requant
-        self.s_b1 = self.s_in * self.s_w1_fused() if hasattr(self, "s_w1_fused") else None
+        # Dequantized real weights (deployed int8 weights scaled back)
+        s_w1 = W_SCALES[tag]["s_w1"]
+        s_w2 = W_SCALES[tag]["s_w2"]
+        self.register_buffer("w1", torch.tensor(z["w1"].astype(np.float32)) * s_w1)
+        self.register_buffer("b1", torch.tensor(z["b1"].astype(np.float32)) * (self._s_in * s_w1))
+        self.register_buffer("w2", torch.tensor(z["w2"].astype(np.float32)) * s_w2)
+        self.register_buffer("b2", torch.tensor(z["b2"].astype(np.float32)) * (self._s_tanh * s_w2))
 
-    def s_w1_fused(self):
-        # bias scale = s_in * s_w1; recover from stored (approx) via w1 rel-bias
-        return None
+    def fake_quant(self, x, s, zp):
+        """QAT-style straight-through: quantize->dequantize in fwd, identity gradient.
 
-    def quantize(self, x, s, zp):
-        """Straight-through: round+shift in fwd, pass-through gradient."""
+        y = x + (dq - x).detach(): forward returns dq (the dequantized value),
+        but d dy/dx = 1 (the rounding/clamp path is excluded via detach), so
+        PGD/inf-grad sees the int8 decision boundary yet stays differentiable.
+        """
         q = torch.round(x / s) + zp
-        q = torch.clamp(q, -128, 127)
-        return q - (q - q.detach()) * 0 + (x - (q * s - zp * s).detach())  # ST through range
+        q = torch.clamp(q, -128.0, 127.0)
+        dq = (q - zp) * s
+        return x + (dq - x).detach()
 
     def forward(self, x):
-        # x: float [0,1] normalized; quantize input to int8 replica
-        xq = self.quantize(x, self.s_in, self.zp_in)
+        # input quantize: int8 at s_in/zp_in (deployed path)
+        xq = self.fake_quant(x, self._s_in, self._zp_in)
 
-        # FC1
-        f1 = F.linear(xq, self.w1, self.b1)   # int32-ish accumulator in float
-        f1q = self.quantize(f1, self.s_fc1out, self.zp_fc1out)
+        # FC1 (dequantized int8 weights + int32 bias at s_in*s_w1)
+        f1 = F.linear(xq, self.w1, self.b1)
+        f1q = self.fake_quant(f1, self._s_fc1out, self._zp_fc1out)
 
-        # Tanh int8 (straight-through; differentiable tanh used for gradient)
+        # Tanh int8 (1/128): differentiable tanh in fwd, quantized to int8
         t = torch.tanh(f1q)
-        tq = self.quantize(t, self.s_tanh, self.zp_tanh)
+        tq = self.fake_quant(t, self._s_tanh, self._zp_tanh)
 
-        # FC2
+        # FC2 (dequantized int8 weights + int32 bias at s_tanh*s_w2)
         f2 = F.linear(tq, self.w2, self.b2)
-        f2q = self.quantize(f2, self.s_fc2pre, self.zp_fc2pre)
+        f2q = self.fake_quant(f2, self._s_fc2pre, self._zp_fc2pre)
 
-        # Sigmoid int8
+        # Sigmoid int8 output (1/256)
         s = torch.sigmoid(f2q)
-        sq = self.quantize(s, self.s_out, self.zp_out)
+        sq = self.fake_quant(s, self._s_out, self._zp_out)
         return sq.squeeze(-1)
 
 
@@ -228,15 +240,29 @@ def load_source(prov_value):
     return torch.tensor(X[mask]), torch.tensor(y[mask])
 
 
+def load_manifold():
+    """Mirror of shadow/run_check4_real.py.load_manifold(): PCA-2 basis + centroid."""
+    with open(os.path.join(FEATURES_DIR, "manifold_basis.json")) as f:
+        data = json.load(f)
+    return (torch.tensor(data["basis"], dtype=torch.float32),
+            torch.tensor(data["c_base"], dtype=torch.float32))
+
+
 def build_dataset(Xs, ys, classifier, n_samples, W):
-    # benign samples, build sliding trajectory windows of W-1 benign rows before each
+    # Mirror Edge: benign samples only + <=0.95 confidence filter, sliding
+    # trajectory windows of W-1 consecutive rows before each sample.
     benign_idx = torch.where(ys == 0)[0]
+    with torch.no_grad():
+        probs = classifier(Xs[benign_idx])
+    nat_conf = torch.where(probs > 0.5, probs, 1.0 - probs)
+    keep = nat_conf.squeeze() <= 0.95
+    benign_idx = benign_idx[keep]
+
     dataset, trajectories = [], []
     for k in range(len(benign_idx)):
         i = int(benign_idx[k].item())
         if i < W - 1:
             continue
-        # window: W-1 rows IMMEDIATELY preceding (consecutive rows = trajectory)
         traj = [Xs[j] for j in range(i - (W - 1), i)]
         dataset.append(Xs[i])
         trajectories.append(traj)
@@ -274,17 +300,20 @@ def run_battery(classifier, dataset, trajectories, c_base, basis, cfg, attacks, 
 
 
 def main():
+    torch.manual_seed(42)
     gammas = load_gamma()
+    basis, c_base = load_manifold()
     attack_cfgs = [("eps0.05_20", 0.01, 20, 0.05), ("eps0.1_50", 0.01, 50, 0.1),
                    ("eps0.2_100", 0.01, 100, 0.2)]
     cfg = {"W": W, "gamma": 0.0, "lambda": 1.0, "k": 2.0,
            "delta_theta_max": DELTA_THETA_MAX_DEG * (3.141592653589793 / 180.0)}
-    n_samples = 60
+    n_samples = 200
 
     report = {"experiment": "Items 11+12: MCU adaptive-attacker gate on deployed int8 specialists",
               "W": W, "d": D, "n_samples": n_samples,
               "replica": "int8 weights extracted from models/mcu_specialist_*.tflite, differentiable ST-quant",
-              "fixed_basis_defense": "Givens rotation in fixed PCA basis (theta from epsilon_p)"}
+              "fixed_basis_defense": "Givens rotation in fixed PCA-2 basis (theta from epsilon_p)",
+              "manifold": "mcu/features/manifold_basis.json (PCA-2 of clean benign unified d=12)"}
 
     for tag, prov in [("nsl", 0), ("unsw", 1)]:
         gamma = gammas[tag]
@@ -295,8 +324,6 @@ def main():
         Xs, ys = load_source(prov)
         dataset, trajectories = build_dataset(Xs, ys, classifier, n_samples, W)
         print(f"  benign samples: {len(dataset)}")
-        c_base = torch.zeros(D)
-        basis = torch.stack([torch.eye(D)[0], torch.eye(D)[1]])  # fixed default basis
 
         # 1) Vulnerable (attacker-coupled) basis first
         vuln = run_battery(classifier, dataset, trajectories, c_base, None, cfg,
