@@ -1,0 +1,91 @@
+{
+  "experiment": "Routing gate for the two-specialist deployment (Section VI-A/VII-A)",
+  "architecture": "ridge-logistic on the unified 12-dim feature vector; 12x1 FC + logistic LUT; runs at the MCU fusion point in parallel with W-window rotation, before specialist Invoke",
+  "deployment_frame": "gate + NSL-spec + UNSW-spec (three-component pipeline)",
+  "split": "80/20 per source, seed 42 (identical to eval_specialists_cross.py)",
+  "train": {
+    "rows": 324952,
+    "gate_train_acc": 1.0,
+    "gate_test_ce_acc": 1.0
+  },
+  "test": {
+    "rows": 81239,
+    "nsl": 29704,
+    "unsw": 51535
+  },
+  "gate_routing": {
+    "accuracy_overall": 1.0,
+    "accuracy_nsl_to_nsl_spec": 1.0,
+    "accuracy_unsw_to_unsw_spec": 1.0,
+    "n_misrouted": 1
+  },
+  "deployment_accuracy": {
+    "oracle_provenance_routing_full_test": 0.8766,
+    "gate_routed_full_test": 0.8766,
+    "gate_routed_nsl": 0.9099,
+    "gate_routed_unsw": 0.8574,
+    "prior_cell_sampled_oracle_0p8766": 0.8766,
+    "n_misrouted_but_lucky": 1,
+    "note": "gate routing error = 1 / 81,239 test rows (99.9988% routing accuracy); the single misrouted row was correctly classified anyway, so gate-routed == oracle-provenance = 0.8766 exactly. Route-luck contributes ~nothing to deployment accuracy here."
+  },
+  "separability": {
+    "dim1_mean_nsl_vs_unsw": [
+      0.4143,
+      0.009
+    ],
+    "dim9_mean_nsl_vs_unsw": [
+      0.7178,
+      0.0239
+    ]
+  },
+  "robustness_probe": {
+    "margin_median_stdspace": 0.144,
+    "margin_min_stdspace": 0.025,
+    "frac_margin_lt_0p1": 0.0673,
+    "centroid_shift_flip": {
+      "0.1": {
+        "flip_rate": 0.0,
+        "n_flipped": 1
+      },
+      "0.25": {
+        "flip_rate": 0.0002,
+        "n_flipped": 20
+      },
+      "0.5": {
+        "flip_rate": 0.6429,
+        "n_flipped": 52231
+      },
+      "1.0": {
+        "flip_rate": 1.0,
+        "n_flipped": 81239
+      }
+    },
+    "note": "first-order proxy in standardized feature space; a true gate attack goes through the mechanism->feature pipeline (deferred to Limitations)"
+  },
+  "deployed_cost": {
+    "sram_bytes": 21,
+    "int8_params": {
+      "w": [
+        -5,
+        -127,
+        15,
+        1,
+        0,
+        0,
+        4,
+        -16,
+        -10,
+        -56,
+        18,
+        30
+      ],
+      "b": 18,
+      "scale": 0.032895
+    },
+    "cycles": 132,
+    "cycles_mac": 6,
+    "cycles_logistic_lut": 60,
+    "t_gate_ms_at_168mhz": 0.000786
+  },
+  "deployed_weights": "trained_weights/routing_gate.npz"
+}

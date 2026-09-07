@@ -49,10 +49,18 @@ CYC_INTERP = 2000
 #   T_theta  : epsilon_p over W=10 trajectory -> gamma comparison -> angle.
 #   T_rotate : Givens rotation of one d-vector in the [u,v] plane
 #              (2 dot over d + 2 saxpy) ~ 4d flops + angle scaling.
+#   T_gate   : routing gate (ridge-logistic provenance classifier on the
+#              12-dim frame). One 12x1 FC + logistic LUT, run at the
+#              fusion point in parallel with the W-window rotation, before
+#              the specialist Invoke. Weights: 13 x int8 + scale (21 B
+#              SRAM). Deployed weights: mcu/trained_weights/routing_gate.npz.
 SENSE_CHARS_PER_FRAME = 84
 CYC_PER_CHAR = {"optimistic": 20, "typical": 45, "conservative": 80}
 CYC_THETA = 200
 CYC_ROTATE = 4 * 12 + 120   # 4d + angle bookkeeping for d=12
+CYC_GATE_LOGISTIC_LUT = 60  # sigmoid from a small LUT (arguably swappable
+                            # for quantized exp, same order) once per frame
+GATE_DIMS = 12
 
 
 def tensor_dims(t):
@@ -116,15 +124,16 @@ def per_scenario(ops, cyc_mac, cyc_char):
     t_sense = SENSE_CHARS_PER_FRAME * cyc_char
     t_theta = CYC_THETA
     t_rot = CYC_ROTATE
-    total = t_sense + t_theta + t_rot + t_inf
+    t_gate = GATE_DIMS * cyc_mac + CYC_GATE_LOGISTIC_LUT
+    total = t_sense + t_theta + t_rot + t_gate + t_inf
     ms = lambda c: c / CLK_HZ * 1e3
     return {"cycles": total, "latency_ms": round(ms(total), 4), "sla_ms": SLA_MS,
             "sla_ratio": round(ms(total) / SLA_MS, 4),
             "stages_cycles": {"T_sense": t_sense, "T_theta": t_theta,
-                              "T_rotate": t_rot, "T_inf": t_inf},
+                              "T_gate": t_gate, "T_rotate": t_rot, "T_inf": t_inf},
             "stages_ms": {k: round(ms(v), 4) for k, v in
                           (("T_sense", t_sense), ("T_theta", t_theta),
-                           ("T_rotate", t_rot), ("T_inf", t_inf))},
+                           ("T_gate", t_gate), ("T_rotate", t_rot), ("T_inf", t_inf))},
             "t_inf_only_ms": round(ms(t_inf), 4)}
 
 
@@ -163,17 +172,20 @@ def main():
             print(f"   [{s:>12s}] {r['cycles']:>6d} cyc = {r['latency_ms']:.4f} ms "
                   f"({r['sla_ratio']*100:.2f}% of {SLA_MS} ms SLA)   "
                   f"[sense {st['T_sense']:.4f} | theta {st['T_theta']:.4f} | "
-                  f"rot {st['T_rotate']:.4f} | T_inf {st['T_inf']:.4f}]")
+                  f"gate {st['T_gate']:.4f} | rot {st['T_rotate']:.4f} | T_inf {st['T_inf']:.4f}]")
 
     report = {"experiment": "Item 6+cycle model: analytical INT8 inference latency on STM32F407 @168 MHz",
-              "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_rotate. WARNING: T_theta/T_rotate are modeled from the Python defense (not implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
+              "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_gate (routing gate, 12x1 FC + logistic LUT), T_rotate. WARNING: T_theta/T_gate/T_rotate are modeled from the Python defense / host-trained gate (not yet implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
               "clk_hz": CLK_HZ, "sla_budget_ms": SLA_MS,
               "cost_model": {"cyc_mac": CYC_MAC_SCEN, "fc_base": CYC_FC_BASE,
                              "quant_per_out": CYC_QUANT, "activation_elem": CYC_ACTIVATION_ELEM,
                              "interpreter_overhead": CYC_INTERP,
                              "sense_chars_frame": SENSE_CHARS_PER_FRAME,
                              "cyc_per_char": CYC_PER_CHAR,
-                             "cyc_theta": CYC_THETA, "cyc_rotate": CYC_ROTATE},
+                             "cyc_theta": CYC_THETA, "cyc_rotate": CYC_ROTATE,
+                             "cyc_gate": {"dims": GATE_DIMS, "cycles": GATE_DIMS * 6 + CYC_GATE_LOGISTIC_LUT,
+                                           "logistic_lut": CYC_GATE_LOGISTIC_LUT,
+                                           "sram_bytes": 21, "fp": "mcu/trained_weights/routing_gate.npz"}},
               "models": per_model,
               "verdict": {t: per_model[t]["scenarios"]["typical"] for t in models}}
 
