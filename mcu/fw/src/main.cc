@@ -23,7 +23,7 @@
 /* ---- Constants ---- */
 static constexpr int kInputDim   = 12;
 static constexpr int kArenaSize  = 16 * 1024;  /* 16 KB tensor arena */
-static constexpr int kNumIters   = 5;           /* repeat each model for stable timing */
+static constexpr int kNumIters   = 50;          /* repeat each model for stable timing */
 
 /* Item 6 (DMA ring buffer): host streams feature vectors over USART2 RX.
  * DMA2 Stream5 Channel4 dumps bytes into a 256 B circular buffer; the
@@ -238,7 +238,14 @@ static void make_dummy_input(void)
     }
 }
 
-static int run_model(tflite::MicroInterpreter *interp, const char *name)
+/* Per-invocation DWT cycle capture: filled by run_model during the
+ * benchmark loop, read back over SWD by the host (openocd) after the loop. */
+static volatile uint32_t g_nsl_cyc[kNumIters];
+static volatile uint32_t g_unsw_cyc[kNumIters];
+static volatile uint32_t g_bench_done = 0;
+
+static int run_model(tflite::MicroInterpreter *interp, const char *name,
+                     volatile uint32_t *cyc_out, int idx, int cap)
 {
     TfLiteTensor *input  = interp->input_tensor(0);
     TfLiteTensor *output = interp->output_tensor(0);
@@ -254,6 +261,8 @@ static int run_model(tflite::MicroInterpreter *interp, const char *name)
     uint32_t cycles = DWT_CYCCNT - start;
 
     if (st != kTfLiteOk) { uart2_puts("ERR:INVOKE\n"); return -1; }
+
+    if (cyc_out && idx >= 0 && idx < cap) { cyc_out[idx] = cycles; }
 
     /* Dequantize output: prob = (int8 - zp) * scale */
     int8_t raw_out = output->data.int8[0];
@@ -351,14 +360,16 @@ extern "C" int main(void)
         uart2_puts(" ---\n");
 
         /* NSL specialist (provenance=0 routing path) */
-        run_model(g_nsl_interp, "NSL ");
+        run_model(g_nsl_interp, "NSL ", g_nsl_cyc, iter, kNumIters);
 
         /* UNSW specialist (provenance=1 routing path) */
-        run_model(g_unsw_interp, "UNSW");
+        run_model(g_unsw_interp, "UNSW", g_unsw_cyc, iter, kNumIters);
 
         led_off(1);
         led_off(3);
     }
+
+    g_bench_done = 1;
 
     uart2_puts("=== DONE ===\n");
     led_on(0);  /* green = finished */
@@ -369,8 +380,8 @@ extern "C" int main(void)
         if (g_new_frame) {
             g_new_frame = 0;
             led_on((g_win_cnt & 1u) ? 1 : 3);
-            run_model(g_nsl_interp, "NSL ");
-            run_model(g_unsw_interp, "UNSW");
+            run_model(g_nsl_interp, "NSL ", nullptr, -1, 0);
+            run_model(g_unsw_interp, "UNSW", nullptr, -1, 0);
             led_off(1);
             led_off(3);
         }

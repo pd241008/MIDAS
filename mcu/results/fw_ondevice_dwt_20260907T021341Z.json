@@ -1,0 +1,30 @@
+{
+  "timestamp": "20260907T021341Z",
+  "script": "on-device: openocd SWD + firmware DWT capture",
+  "git_commit": "517dd8b",
+  "config": {
+    "board": "DISCO-F407VG (STM32F407G-DISC1), ST-LINK/V2 via usbipd-win",
+    "clock": "PLL 168 MHz (verified via DWT-vs-host-clock rate probe)",
+    "models": "NSL and UNSW INT8 specialists (3-layer: FC/Tanh/FC, d=12->32->1/2)",
+    "method": "firmware stores DWT_CYCCNT delta around interp->Invoke() per iteration into SRAM arrays; host reads 400 B via openocd dump_image after g_bench_done; kNumIters=50",
+    "cross_check": "DWT (0xE0001004) vs SysTick VAL (0xE000E018) over 50 ms host window: agree within 3 cycles over 8.43e6",
+    "uart_note": "F407G-DISC1 ST-Link VCP not physically wired to target USART2 (UM1472); output observed over SWD instead of UART"
+  },
+  "results": {
+    "nsl_invoke_cycles": {"n": 50, "min": 15719, "max": 15719, "mean": 15719.0, "median": 15719, "stdev": 0.0},
+    "unsw_invoke_cycles": {"n": 50, "min": 15718, "max": 15718, "mean": 15718.0, "median": 15718, "stdev": 0.0},
+    "nsl_t_inf_ms": 0.09356547619047619,
+    "unsw_t_inf_ms": 0.0935595238095238,
+    "rate_probe_cycles_per_50ms": 8427944,
+    "sysstick_agreement_abs": 3
+  },
+  "analytical_reference": {
+    "fw_cycle_model_t_inf_cyc": 5936,
+    "overhead_ratio_measured_vs_analytical": 2.648
+  },
+  "extra": {
+    "firmware_bug_fixed": "DWT base was SCS_BASE+0x100 (0xE000E100); corrected to 0xE0001000 — counter never ran before, so ALL prior on-device DWT values would have been 0/meaningless",
+    "deterministic": "int8 FC with fixed input -> cycle count data-independent; stdev=0 across 50 iters each model",
+    "breakpoint_crosscheck_capture": "openocd start=0x080012bc/end=0x080012c2 deltas were 15478 vs firmware-internal 15719 (1.5% window skew, both DWT)"
+  }
+}

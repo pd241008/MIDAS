@@ -81,6 +81,9 @@ def categorize(syms):
         elif any(k in name for k in ("g_vec", "g_num", "g_input")):
             cat.setdefault("live ingest: parser + input", 0)
             cat["live ingest: parser + input"] += sz
+        elif "cyc" in name:  # benchmark instrumentation (non-production, DWT capture)
+            cat.setdefault("benchmark DWT capture arrays (non-production)", 0)
+            cat["benchmark DWT capture arrays (non-production)"] += sz
         else:
             cat.setdefault("state/pointers/other", 0)
             cat["state/pointers/other"] += sz

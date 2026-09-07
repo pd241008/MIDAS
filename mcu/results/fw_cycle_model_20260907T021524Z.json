@@ -1,0 +1,220 @@
+{
+  "timestamp": "20260907T021524Z",
+  "script": "fw_cycle_model.py",
+  "git_commit": "517dd8b",
+  "config": {
+    "clk_hz": 168000000.0,
+    "sla_budget_ms": 10.0
+  },
+  "results": {
+    "models": {
+      "nsl": {
+        "model": "mcu_specialist_nsl_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7456,
+            "latency_ms": 0.0444,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_gate": 96,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_gate": 0.0006,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10216,
+            "latency_ms": 0.0608,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0061,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_gate": 132,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_gate": 0.0008,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 14036,
+            "latency_ms": 0.0835,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0084,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_gate": 180,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_gate": 0.0011,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      },
+      "unsw": {
+        "model": "mcu_specialist_unsw_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7456,
+            "latency_ms": 0.0444,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_gate": 96,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_gate": 0.0006,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10216,
+            "latency_ms": 0.0608,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0061,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_gate": 132,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_gate": 0.0008,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 14036,
+            "latency_ms": 0.0835,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0084,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_gate": 180,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_gate": 0.0011,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      }
+    }
+  },
+  "extra": {
+    "note": "Analytical estimate, now cross-checked on real hardware (DISCO-F407VG over SWD). Measured on-device T_inf = 15,719 cyc (NSL) / 15,718 cyc (UNSW) at 168 MHz ~= 0.0936 ms with stdev 0 over 50 runs each; the analytical typical 5,936 cyc (0.0353 ms) is a 2.65x UNDERESTIMATE because TFLM per-op bookkeeping dominates at this tiny scale. Counter certified: DWT vs SysTick agree within 3 cycles over 8.43e6 (50 ms host window); DWT rate vs host clock ~168.6 MHz. T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_gate (routing gate, 12x1 FC + logistic LUT), T_rotate. WARNING: T_theta/T_gate/T_rotate are modeled from the Python defense / host-trained gate (not yet implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute). GPIO-toggle-vs-DWT scope leg still needs an external logic analyzer."
+  }
+}

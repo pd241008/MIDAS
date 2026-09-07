@@ -1,6 +1,29 @@
 {
   "experiment": "Item 6+cycle model: analytical INT8 inference latency on STM32F407 @168 MHz",
-  "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_gate (routing gate, 12x1 FC + logistic LUT), T_rotate. WARNING: T_theta/T_gate/T_rotate are modeled from the Python defense / host-trained gate (not yet implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
+  "note": "Analytical estimate, now cross-checked on real hardware (DISCO-F407VG over SWD). Measured on-device T_inf = 15,719 cyc (NSL) / 15,718 cyc (UNSW) at 168 MHz ~= 0.0936 ms with stdev 0 over 50 runs each; the analytical typical 5,936 cyc (0.0353 ms) is a 2.65x UNDERESTIMATE because TFLM per-op bookkeeping dominates at this tiny scale. Counter certified: DWT vs SysTick agree within 3 cycles over 8.43e6 (50 ms host window); DWT rate vs host clock ~168.6 MHz. T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_gate (routing gate, 12x1 FC + logistic LUT), T_rotate. WARNING: T_theta/T_gate/T_rotate are modeled from the Python defense / host-trained gate (not yet implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute). GPIO-toggle-vs-DWT scope leg still needs an external logic analyzer.",
+  "measured_on_device": {
+    "board": "DISCO-F407VG via ST-LINK/V2 (usbipd) + OpenOCD SWD",
+    "method": "firmware DWT_CYCCNT around Invoke per iteration into SRAM; kNumIters=50",
+    "nsl_invoke_cycles": {
+      "n": 50,
+      "min": 15719,
+      "max": 15719,
+      "mean": 15719.0,
+      "stdev": 0.0
+    },
+    "unsw_invoke_cycles": {
+      "n": 50,
+      "min": 15718,
+      "max": 15718,
+      "mean": 15718.0,
+      "stdev": 0.0
+    },
+    "T_inf_ms": {
+      "nsl": 0.093565,
+      "unsw": 0.09356
+    },
+    "overhead_ratio_vs_analytical_typical": 2.648
+  },
   "clk_hz": 168000000.0,
   "sla_budget_ms": 10.0,
   "cost_model": {
