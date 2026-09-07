@@ -22,8 +22,9 @@ import torch
 import torch.nn.functional as F
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FEATURES_DIR = os.path.join(HERE, "features")
-WEIGHTS_DIR = os.path.join(HERE, "trained_weights")
+MCU_DIR = os.path.dirname(HERE)
+FEATURES_DIR = os.path.join(MCU_DIR, "features")
+WEIGHTS_DIR = os.path.join(MCU_DIR, "trained_weights")
 
 CORE_7_IDX = [0, 1, 2, 3, 4, 5, 6]       # dur, proto, service, state, sbytes, dbytes, is_sm_ips_ports
 ANCHOR_12_IDX = list(range(12))

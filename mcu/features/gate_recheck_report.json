@@ -1,0 +1,152 @@
+{
+  "experiment": "MCU high-N gate recheck (mirror of shadow/recheck_n200.py)",
+  "n_samples": 800,
+  "seed": 42,
+  "gate_rule": "|gap| > 0.02 AND gap/SE > 1.0 on fresh pool",
+  "configs": {
+    "nsl": {
+      "fixed": {
+        "eps0.05_20": {
+          "naive_asr": 0.985,
+          "adaptive_asr": 0.9812,
+          "n": 800,
+          "gap": -0.0038,
+          "gap_se": -0.5823,
+          "naive_count": 788,
+          "adaptive_count": 785,
+          "gate": false,
+          "config": "eps0.05_20"
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.9237,
+          "adaptive_asr": 0.9175,
+          "n": 800,
+          "gap": -0.0062,
+          "gap_se": -0.4624,
+          "naive_count": 739,
+          "adaptive_count": 734,
+          "gate": false,
+          "config": "eps0.1_50"
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.8175,
+          "adaptive_asr": 0.8425,
+          "n": 800,
+          "gap": 0.025,
+          "gap_se": 1.3318,
+          "naive_count": 654,
+          "adaptive_count": 674,
+          "gate": true,
+          "config": "eps0.2_100"
+        }
+      },
+      "coupled": {
+        "eps0.05_20": {
+          "naive_asr": 0.38,
+          "adaptive_asr": 0.6663,
+          "n": 800,
+          "gap": 0.2863,
+          "gap_se": 11.964,
+          "naive_count": 304,
+          "adaptive_count": 533,
+          "gate": true,
+          "config": "eps0.05_20"
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.5312,
+          "adaptive_asr": 0.8575,
+          "n": 800,
+          "gap": 0.3263,
+          "gap_se": 15.1454,
+          "naive_count": 425,
+          "adaptive_count": 686,
+          "gate": true,
+          "config": "eps0.1_50"
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.7863,
+          "adaptive_asr": 0.9387,
+          "n": 800,
+          "gap": 0.1525,
+          "gap_se": 9.0821,
+          "naive_count": 629,
+          "adaptive_count": 751,
+          "gate": true,
+          "config": "eps0.2_100"
+        }
+      }
+    },
+    "unsw": {
+      "coupled": {
+        "eps0.05_20": {
+          "naive_asr": 0.7063,
+          "adaptive_asr": 0.6937,
+          "n": 800,
+          "gap": -0.0125,
+          "gap_se": -0.5456,
+          "naive_count": 565,
+          "adaptive_count": 555,
+          "gate": false,
+          "config": "eps0.05_20"
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.5687,
+          "adaptive_asr": 0.5775,
+          "n": 800,
+          "gap": 0.0088,
+          "gap_se": 0.3538,
+          "naive_count": 455,
+          "adaptive_count": 462,
+          "gate": false,
+          "config": "eps0.1_50"
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.4725,
+          "adaptive_asr": 0.4913,
+          "n": 800,
+          "gap": 0.0188,
+          "gap_se": 0.7506,
+          "naive_count": 378,
+          "adaptive_count": 393,
+          "gate": false,
+          "config": "eps0.2_100"
+        }
+      },
+      "fixed": {
+        "eps0.05_20": {
+          "naive_asr": 0.9613,
+          "adaptive_asr": 0.97,
+          "n": 800,
+          "gap": 0.0087,
+          "gap_se": 0.9608,
+          "naive_count": 769,
+          "adaptive_count": 776,
+          "gate": false,
+          "config": "eps0.05_20"
+        },
+        "eps0.1_50": {
+          "naive_asr": 0.8725,
+          "adaptive_asr": 0.8688,
+          "n": 800,
+          "gap": -0.0038,
+          "gap_se": -0.2235,
+          "naive_count": 698,
+          "adaptive_count": 695,
+          "gate": false,
+          "config": "eps0.1_50"
+        },
+        "eps0.2_100": {
+          "naive_asr": 0.8313,
+          "adaptive_asr": 0.8337,
+          "n": 800,
+          "gap": 0.0025,
+          "gap_se": 0.1339,
+          "naive_count": 665,
+          "adaptive_count": 667,
+          "gate": false,
+          "config": "eps0.2_100"
+        }
+      }
+    }
+  }
+}

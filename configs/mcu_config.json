@@ -1,0 +1,18 @@
+{
+  "W": 10,
+  "D": 12,
+  "gamma_per_source": {
+    "nsl": 0.970044,
+    "unsw": 0.612702
+  },
+  "lambda": 1.0,
+  "k": 2.0,
+  "delta_theta_max_deg": 45.0,
+  "sla_budget_ms": 10,
+  "channel_capacity": 2,
+  "model_path_nsl": "models/mcu_specialist_nsl_int8.tflite",
+  "model_path_unsw": "models/mcu_specialist_unsw_int8.tflite",
+  "features_path": "mcu/features/unified_features_norm.npy",
+  "gamma_params_path": "mcu/features/gamma_params.json",
+  "use_synthetic_manifold": false
+}

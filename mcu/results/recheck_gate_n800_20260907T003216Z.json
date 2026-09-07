@@ -1,0 +1,56 @@
+{
+  "timestamp": "20260907T003216Z",
+  "script": "recheck_gate_n800.py",
+  "git_commit": "3138a7b",
+  "config": {
+    "W": 10,
+    "D": 12,
+    "n_samples": 800,
+    "seed": 42,
+    "gate_rule": "|gap| > 0.02 AND gap/SE > 1.0 on fresh pool"
+  },
+  "results": {
+    "configs": {
+      "unsw": {
+        "coupled": {
+          "eps0.05_20": {
+            "naive_asr": 0.7063,
+            "adaptive_asr": 0.6937,
+            "n": 800,
+            "gap": -0.0125,
+            "gap_se": -0.5456,
+            "naive_count": 565,
+            "adaptive_count": 555,
+            "gate": false,
+            "config": "eps0.05_20"
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.5687,
+            "adaptive_asr": 0.5775,
+            "n": 800,
+            "gap": 0.0088,
+            "gap_se": 0.3538,
+            "naive_count": 455,
+            "adaptive_count": 462,
+            "gate": false,
+            "config": "eps0.1_50"
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.4725,
+            "adaptive_asr": 0.4913,
+            "n": 800,
+            "gap": 0.0188,
+            "gap_se": 0.7506,
+            "naive_count": 378,
+            "adaptive_count": 393,
+            "gate": false,
+            "config": "eps0.2_100"
+          }
+        }
+      }
+    }
+  },
+  "extra": {
+    "n200_source": "mcu/features/attacker_gate_report.json"
+  }
+}
