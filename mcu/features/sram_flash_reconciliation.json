@@ -1,0 +1,30 @@
+{
+  "elf": "/root/workspace/workspace/03-Code/Projects/Legacy/Midas/mcu/fw/build/mcu_fw.elf",
+  "on_device_SRAM": {
+    "scratch (TFLM tensor arena)": 16384,
+    "middleware (MicroInterpreter + resolver)": 344,
+    "newlib/stdio (FILE, reent)": 316,
+    "live ingest: DMA byte ring": 256,
+    "live ingest: parser + input": 100,
+    "state/pointers/other": 40
+  },
+  "on_device_SRAM_total_bytes": 17532,
+  "flash_sections": {
+    ".text": 54296,
+    ".data": 92
+  },
+  "flash_total_bytes": 54388,
+  "midas_algorithmic_tier_d12": {
+    "ring_buf (W=10 x d=12 x f32)": 480,
+    "C_base (d^2 x f32)": 576,
+    "C_rotated (d^2 x f32)": 576,
+    "state (window cnt, gamma, lambda, k)": 48
+  },
+  "midas_algorithmic_tier_d12_total": 1680,
+  "paper_ref_14112B_reconstructed": {
+    "C_base+C_rotated @d=42": 14112,
+    "7.3 % of 192 KB": 14352
+  },
+  "interpretation": "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 (14,112 B = 7.35%). Device SRAM (17.1 KB incl 16 KB TFLM arena) is a DIFFERENT quantity. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier (ring+c matrices+state) = ~1.7 KB incremental over the TFLM baseline.",
+  "note_window": "g_win (480 B W-window) is current-py optimized out as a dead store (only written, never read until the on-device defense lands); it reappears when the defense consumes it."
+}

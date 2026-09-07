@@ -1,6 +1,6 @@
 {
   "experiment": "Item 6+cycle model: analytical INT8 inference latency on STM32F407 @168 MHz",
-  "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed.",
+  "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_rotate. WARNING: T_theta/T_rotate are modeled from the Python defense (not implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
   "clk_hz": 168000000.0,
   "sla_budget_ms": 10.0,
   "cost_model": {
@@ -12,7 +12,15 @@
     "fc_base": 800,
     "quant_per_out": 16,
     "activation_elem": 48,
-    "interpreter_overhead": 2000
+    "interpreter_overhead": 2000,
+    "sense_chars_frame": 84,
+    "cyc_per_char": {
+      "optimistic": 20,
+      "typical": 45,
+      "conservative": 80
+    },
+    "cyc_theta": 200,
+    "cyc_rotate": 168
   },
   "models": {
     "nsl": {
@@ -53,22 +61,61 @@
       "total_macs": 208,
       "scenarios": {
         "optimistic": {
-          "cycles": 5312,
-          "latency_ms": 0.0316,
+          "cycles": 7360,
+          "latency_ms": 0.0438,
           "sla_ms": 10.0,
-          "sla_ratio": 0.0032
+          "sla_ratio": 0.0044,
+          "stages_cycles": {
+            "T_sense": 1680,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 5312
+          },
+          "stages_ms": {
+            "T_sense": 0.01,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0316
+          },
+          "t_inf_only_ms": 0.0316
         },
         "typical": {
-          "cycles": 5936,
-          "latency_ms": 0.0353,
+          "cycles": 10084,
+          "latency_ms": 0.06,
           "sla_ms": 10.0,
-          "sla_ratio": 0.0035
+          "sla_ratio": 0.006,
+          "stages_cycles": {
+            "T_sense": 3780,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 5936
+          },
+          "stages_ms": {
+            "T_sense": 0.0225,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0353
+          },
+          "t_inf_only_ms": 0.0353
         },
         "conservative": {
-          "cycles": 6768,
-          "latency_ms": 0.0403,
+          "cycles": 13856,
+          "latency_ms": 0.0825,
           "sla_ms": 10.0,
-          "sla_ratio": 0.004
+          "sla_ratio": 0.0082,
+          "stages_cycles": {
+            "T_sense": 6720,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 6768
+          },
+          "stages_ms": {
+            "T_sense": 0.04,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0403
+          },
+          "t_inf_only_ms": 0.0403
         }
       }
     },
@@ -110,38 +157,103 @@
       "total_macs": 208,
       "scenarios": {
         "optimistic": {
-          "cycles": 5312,
-          "latency_ms": 0.0316,
+          "cycles": 7360,
+          "latency_ms": 0.0438,
           "sla_ms": 10.0,
-          "sla_ratio": 0.0032
+          "sla_ratio": 0.0044,
+          "stages_cycles": {
+            "T_sense": 1680,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 5312
+          },
+          "stages_ms": {
+            "T_sense": 0.01,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0316
+          },
+          "t_inf_only_ms": 0.0316
         },
         "typical": {
-          "cycles": 5936,
-          "latency_ms": 0.0353,
+          "cycles": 10084,
+          "latency_ms": 0.06,
           "sla_ms": 10.0,
-          "sla_ratio": 0.0035
+          "sla_ratio": 0.006,
+          "stages_cycles": {
+            "T_sense": 3780,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 5936
+          },
+          "stages_ms": {
+            "T_sense": 0.0225,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0353
+          },
+          "t_inf_only_ms": 0.0353
         },
         "conservative": {
-          "cycles": 6768,
-          "latency_ms": 0.0403,
+          "cycles": 13856,
+          "latency_ms": 0.0825,
           "sla_ms": 10.0,
-          "sla_ratio": 0.004
+          "sla_ratio": 0.0082,
+          "stages_cycles": {
+            "T_sense": 6720,
+            "T_theta": 200,
+            "T_rotate": 168,
+            "T_inf": 6768
+          },
+          "stages_ms": {
+            "T_sense": 0.04,
+            "T_theta": 0.0012,
+            "T_rotate": 0.001,
+            "T_inf": 0.0403
+          },
+          "t_inf_only_ms": 0.0403
         }
       }
     }
   },
   "verdict": {
     "nsl": {
-      "cycles": 5936,
-      "latency_ms": 0.0353,
+      "cycles": 10084,
+      "latency_ms": 0.06,
       "sla_ms": 10.0,
-      "sla_ratio": 0.0035
+      "sla_ratio": 0.006,
+      "stages_cycles": {
+        "T_sense": 3780,
+        "T_theta": 200,
+        "T_rotate": 168,
+        "T_inf": 5936
+      },
+      "stages_ms": {
+        "T_sense": 0.0225,
+        "T_theta": 0.0012,
+        "T_rotate": 0.001,
+        "T_inf": 0.0353
+      },
+      "t_inf_only_ms": 0.0353
     },
     "unsw": {
-      "cycles": 5936,
-      "latency_ms": 0.0353,
+      "cycles": 10084,
+      "latency_ms": 0.06,
       "sla_ms": 10.0,
-      "sla_ratio": 0.0035
+      "sla_ratio": 0.006,
+      "stages_cycles": {
+        "T_sense": 3780,
+        "T_theta": 200,
+        "T_rotate": 168,
+        "T_inf": 5936
+      },
+      "stages_ms": {
+        "T_sense": 0.0225,
+        "T_theta": 0.0012,
+        "T_rotate": 0.001,
+        "T_inf": 0.0353
+      },
+      "t_inf_only_ms": 0.0353
     }
   }
 }

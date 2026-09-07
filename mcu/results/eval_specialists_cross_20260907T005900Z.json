@@ -1,0 +1,42 @@
+{
+  "timestamp": "20260907T005900Z",
+  "script": "eval_specialists_cross.py",
+  "git_commit": "b89e449",
+  "config": {
+    "d": 12,
+    "hidden": 16,
+    "seed": 42,
+    "test_split": "80/20 per source"
+  },
+  "results": {
+    "accuracy": {
+      "nsl": {
+        "nsl": {
+          "acc": 0.9091,
+          "auroc_rough": 0.9612,
+          "n": 20000
+        },
+        "unsw": {
+          "acc": 0.3436,
+          "auroc_rough": 0.4159,
+          "n": 20000
+        }
+      },
+      "unsw": {
+        "nsl": {
+          "acc": 0.5213,
+          "auroc_rough": 0.0002,
+          "n": 20000
+        },
+        "unsw": {
+          "acc": 0.8578,
+          "auroc_rough": 0.9338,
+          "n": 20000
+        }
+      }
+    }
+  },
+  "extra": {
+    "note": "Section VII-A: per-source held-out accuracy of deployed INT8 specialists"
+  }
+}
