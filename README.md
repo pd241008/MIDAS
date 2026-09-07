@@ -187,6 +187,20 @@ Host-side pipeline (in run order):
 - **`recheck_gate_n800.py`**: Edge sample-size discipline (mirror of
   `shadow/recheck_n200.py`) — every gate config re-run on fresh seeded pools
   at N=800 with the `|gap|>0.02 AND gap/SE>1.0` rule.
+- **`train_routing_gate.py`**: the mechanism that makes 0.8766 "routed
+  deployment accuracy" real. "Provenance" is a training-data origin label a
+  live sensor never sees, so a three-component deployment needs an actual
+  router. A ridge-logistic gate on the same 12-dim frame (12×1 FC + logistic
+  LUT, 21 B SRAM, ~0.0008 ms) rebuilds provenance from features at inference
+  time: 99.9988% routing accuracy (1 misroute / 81,239 held-out rows) and
+  gate-routed deployment accuracy == oracle-provenance == **0.8766**, with a
+  zero-luck explanation (the single misrouted row still classified correctly).
+  The two manifolds are linearly separable (dims 1 and 9 carry it) — the same
+  fact that explains the 0.34/0.52 cross-generalization failure below. Gate
+  robustness: decision-plane margins are tight (median 0.144 std-units, 6.7%
+  of rows within 0.1) — empirical routing error is negligible but the
+  gate-as-attack-surface is flagged in Limitations (first-order,
+  feature-space probe only).
 - **`fw_cycle_model.py`**: analytical per-invocation latency from the actual
   INT8 op graphs (TFLite flatbuffer) on Cortex-M4F @168 MHz.
 
@@ -203,6 +217,18 @@ interpreter (600/600 samples), and the known-vulnerability signal registers
 unambiguously at high N. The UNSW specialist shows no attacker-coupled-basis
 advantage, which is reported as a per-source behavioral difference — not an
 absence claim for the harness as a whole.
+
+Deployment is a **three-component pipeline** (per Section VI-A/VII-A rewrite):
+**routing gate → {NSL-spec, UNSW-spec}**. `eval_specialists_cross.py`
+quantifies why specialization is required, not aesthetic: each deployed INT8
+specialist is accurate same-source (NSL 0.9091, UNSW 0.8578) but collapses
+cross-source (NSL-spec on UNSW rows 0.3436, UNSW-spec on NSL rows 0.5213) —
+a single merged classifier genuinely does not generalize across the two
+datasets, and the gate above reconstructs provenance from features at
+inference time so the two specialists are always routed correctly. Routed
+deployment accuracy **0.8766** (mechanism-backed: gate-routed, not
+oracle-labeled; see `mcu/features/routing_gate_report.json` +
+`mcu/features/specialists_cross_eval.json`).
 
 Every experimental script writes a timestamped, git-hashed capture to
 `mcu/results/<script>_<timestamp>.json` via `mcu/scripts/save_results.py`
@@ -223,10 +249,13 @@ plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
 I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
 circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
 feeds a W=10 float window for the defense, and quantizes the latest vector
-into the INT8 input tensor. Estimated per-invocation latency
-(`fw_cycle_model.py`): **~0.035 ms typical (0.35% of the 10 ms SLA)** —
-host-side analytical estimate; on-board DWT cycle counts are unmeasured
-because the hardware was dropped.
+into the INT8 input tensor. Estimated per-stage latency
+(`fw_cycle_model.py`): **T_inf ≈ 0.035 ms | full defense path ≈ 0.061 ms
+typical (0.61% of the 10 ms SLA)** with rows per stage — T_sense (DMA IDLE +
+ASCII parse) ≈ 0.0225 ms, T_theta 0.0012, **T_gate 0.0008**, T_rotate 0.0010,
+T_inf 0.0353. All numbers are host-side analytical — DWT cycle counts and the
+GPIO-toggle-vs-DWT cross-check are unmeasured because the hardware was
+dropped.
 
 ## Tests
 
@@ -245,7 +274,7 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
 - [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
-- [x] MCU tier: host-side cycle model (analytical ~0.035 ms/invoke @168 MHz, 0.35% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT unmeasured — hardware dropped
+- [x] MCU tier: host-side cycle model (analytical T_inf ~0.035 ms, full defense path ~0.060 ms typical, 0.60% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT + GPIO-toggle cross-check unmeasured — hardware dropped
 - [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 
