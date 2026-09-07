@@ -15,11 +15,12 @@
 #define SCB             ((volatile uint32_t *)(SCS_BASE + 0x0D00UL))
 #define SCB_CPACR       (*(volatile uint32_t *)(SCS_BASE + 0x0888UL))  /* CPACR */
 
-/* DWT cycle counter (for profiling) */
-#define DWT             ((volatile uint32_t *)(SCS_BASE + 0x0100UL))
-#define DWT_CYCCNT      (*(volatile uint32_t *)(SCS_BASE + 0x0104UL))
-#define DWT_CTRL        (*(volatile uint32_t *)(SCS_BASE + 0x0000UL))
-#define DEMCR           (*(volatile uint32_t *)(SCS_BASE + 0x0000UL + 0x00FCUL))
+/* DWT cycle counter (for profiling): base is 0xE0001000, NOT SCS+0x100 */
+#define DWT_BASE        0xE0001000UL
+#define DWT             ((volatile uint32_t *)(DWT_BASE))
+#define DWT_CYCCNT      (*(volatile uint32_t *)(DWT_BASE + 0x0004UL))
+#define DWT_CTRL        (*(volatile uint32_t *)(DWT_BASE + 0x0000UL))
+#define DEMCR           (*(volatile uint32_t *)(SCS_BASE + 0x00FCUL))
 
 /* ---- Peripheral base addresses ---- */
 #define PERIPH_BASE     0x40000000UL

@@ -247,21 +247,35 @@ All MCU-tier hyperparameters live in
 
 ### Firmware
 
-`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG (MathWorks flags no
-public DISCO-F407VG support; building the firmware is a pure host-side
-artifact). Build with `make` in `mcu/fw/`; produces `build/mcu_fw.{elf,bin,hex}`
-plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
-(9.1% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each. Hardware
-I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
-circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
-feeds a W=10 float window for the defense, and quantizes the latest vector
-into the INT8 input tensor. Estimated per-stage latency
-(`fw_cycle_model.py`): **T_inf ≈ 0.035 ms | full defense path ≈ 0.061 ms
-typical (0.61% of the 10 ms SLA)** with rows per stage — T_sense (DMA IDLE +
-ASCII parse) ≈ 0.0225 ms, T_theta 0.0012, **T_gate 0.0008**, T_rotate 0.0010,
-T_inf 0.0353. All numbers are host-side analytical — DWT cycle counts and the
-GPIO-toggle-vs-DWT cross-check are unmeasured because the hardware was
-dropped.
+`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG, flashed and measured
+on the real board over SWD (built with `make` in `mcu/fw/`; produces
+`build/mcu_fw.{elf,bin,hex}` plus `build/mcu_fw.map`; flashed via
+`st-flash write build/mcu_fw.bin 0x08000000`). Measured: **Flash 55.2 KB
+(5.4% of 1 MB)**, **on-device SRAM 17.5 KB (9.1% of 192 KB)** incl. 16 KB TFLM
+arena (the 400 B benchmark DWT-capture arrays are non-production and separated
+in the reconciliation), both int8 specialists 2,528 B each. Hardware I/O is
+decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5 circular
++ IDLE-line framing) ingests host feature vectors bypassing the CPU, feeds a
+W=10 float window for the defense, and quantizes the latest vector into the
+INT8 input tensor.
+
+**Measured on-device latency (SWD).** The firmware timestamps
+`interp->Invoke()` with the DWT cycle counter and accumulates per-iteration
+counts to SRAM; the host reads them back over SWD (OpenOCD). With
+`kNumIters=50` per specialist; counter sanity-checked two ways: DWT vs
+SysTick agree within 3 cycles over 8.43e6 (50 ms window), and DWT rate vs a
+host-timed 50 ms window ≈ 168.6 MHz (nominal 168). Result — **T_inf =
+15,719 cyc ≈ 0.0936 ms (NSL) and 15,718 cyc ≈ 0.0936 ms (UNSW), both with
+stdev = 0 across 50 runs** (int8 FC is data-independent). The analytical
+`fw_cycle_model.py` estimate (5,936 cyc ≈ 0.035 ms typical) is therefore a
+**2.65× underestimate** — TFLM's per-op bookkeeping dominates at this tiny
+scale. Full defense path (analytical sense/theta/gate/rotate + measured
+T_inf) ≈ 0.119 ms typical ≈ **1.2% of the 10 ms MCU SLA**. Methodology notes:
+the board's ST-Link VCP (COM4) is not physically wired to USART2 (UM1472), so
+console output is captured over SWD rather than UART; the GPIO-toggle-vs-DWT
+leg of the cross-check (a scope-timed pulse) still needs an external logic
+analyzer, but the on-chip DWT↔SysTick agreement and the host-clock rate probe
+already certify the counter.
 
 ## Tests
 
@@ -280,7 +294,7 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
 - [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
-- [x] MCU tier: host-side cycle model (analytical T_inf ~0.035 ms, full defense path ~0.060 ms typical, 0.60% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT + GPIO-toggle cross-check unmeasured — hardware dropped
+- [x] MCU tier: measured on-device DWT cycle counts via SWD — T_inf = 15,719/15,718 cyc (~0.094 ms) per specialist, stdev 0 over 50 runs; DWT↔SysTick agree ±3 cyc over 8.4e6; counter rate ≈168.6 MHz vs host clock; analytical fw_cycle_model.py (0.035 ms) is a 2.65× underestimate; GPIO-toggle-vs-DWT scope leg still pending external logic analyzer
 - [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 
