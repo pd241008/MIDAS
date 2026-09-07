@@ -38,29 +38,69 @@
       0.0239
     ]
   },
-  "robustness_probe": {
-    "margin_median_stdspace": 0.144,
-    "margin_min_stdspace": 0.025,
-    "frac_margin_lt_0p1": 0.0673,
-    "centroid_shift_flip": {
-      "0.1": {
-        "flip_rate": 0.0,
-        "n_flipped": 1
-      },
-      "0.25": {
-        "flip_rate": 0.0002,
-        "n_flipped": 20
-      },
-      "0.5": {
-        "flip_rate": 0.6429,
-        "n_flipped": 52231
-      },
-      "1.0": {
-        "flip_rate": 1.0,
-        "n_flipped": 81239
+  "robustness": {
+    "worst_case_misroute_at_epsilon": {
+      "eps": [
+        0.025,
+        0.05,
+        0.08,
+        0.1,
+        0.125,
+        0.15,
+        0.2,
+        0.3
+      ],
+      "frac_misroute_curve_pred": [
+        0.0,
+        0.0001,
+        0.0411,
+        0.0673,
+        0.3033,
+        0.5355,
+        0.6798,
+        0.9203
+      ],
+      "frac_misroute_direct_perturbation": [
+        0.0,
+        0.0001,
+        0.0411,
+        0.0673,
+        0.3033,
+        0.5355,
+        0.6798,
+        0.9203
+      ],
+      "definition": "ADVERSARIAL metric: fraction of held-out queries an adversary can misroute by moving each query a distance <= eps along the minimal perpendicular-to-plane direction in the gate's standardized feature space (worst-case direction for a linear gate). For a linear gate this equals P(margin <= eps); 'direct_perturbation' re-counts it by actually applying that movement (self-check, matches). Units are the gate's internal standardized-feature units -- NOT the mechanism-space PGD attack budgets (eps 0.05-0.2) of the gate recheck, which live in a different space/pipeline stage.",
+      "margin_stats_stdspace": {
+        "median": 0.144,
+        "min": 0.025,
+        "p10": 0.114,
+        "frac_lt_0p1": 0.0673,
+        "frac_eq_0_observed": 0
       }
     },
-    "note": "first-order proxy in standardized feature space; a true gate attack goes through the mechanism->feature pipeline (deferred to Limitations)"
+    "centroid_shift_reference": {
+      "definition": "GEOMETRIC reference ONLY, NOT an adversarial metric: each test query is moved individually a fraction t of the vector from itself to the OTHER source's centroid (NSL rows toward the UNSW centroid, and vice versa). Direction is heuristic (toward the other manifold), NOT the worst-case perpendicular-to-plane direction; magnitude t*(centroid distance) is a large per-query push (t>=0.5 lands deep in the other manifold in real feature units). Reports where routing COLLAPSES under a massive push, not how easily a single query is flipped.",
+      "flip_by_t": {
+        "0.1": {
+          "flip_rate": 0.0,
+          "n_flipped": 1
+        },
+        "0.25": {
+          "flip_rate": 0.0002,
+          "n_flipped": 20
+        },
+        "0.5": {
+          "flip_rate": 0.6429,
+          "n_flipped": 52231
+        },
+        "1.0": {
+          "flip_rate": 1.0,
+          "n_flipped": 81239
+        }
+      }
+    },
+    "adversarial_headline_note": "worst-case at eps=0.1 std-units misroutes ~6.7% of queries, versus an observed routing error of 0.0012% (1/81,239). Margins are tight but violations require the adversarial (perpendicular) direction, which the data does not produce on its own. Both numbers are first-order, in gate feature space; the mechanism->feature attack path is untested and flagged in Limitations."
   },
   "deployed_cost": {
     "sram_bytes": 21,

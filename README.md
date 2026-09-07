@@ -197,10 +197,16 @@ Host-side pipeline (in run order):
   zero-luck explanation (the single misrouted row still classified correctly).
   The two manifolds are linearly separable (dims 1 and 9 carry it) — the same
   fact that explains the 0.34/0.52 cross-generalization failure below. Gate
-  robustness: decision-plane margins are tight (median 0.144 std-units, 6.7%
-  of rows within 0.1) — empirical routing error is negligible but the
-  gate-as-attack-surface is flagged in Limitations (first-order,
-  feature-space probe only).
+  robustness, precisely defined in the report: (i) ADVERSARIAL metric — a
+  worst-case ε-ball in the gate's standardized-feature space (per-query
+  move perpendicular to the decision plane) misroutes 4.1%/6.7%/30.3% of
+  queries at ε=0.08/0.10/0.125; verified by direct perturbation; observed
+  routing error is still only 1/81,239 because violations need the
+  adversarial direction. (ii) GEOMETRIC reference, deliberately NOT an
+  attack metric — a per-query push a fraction t of the way to the *other*
+  source's centroid (heuristic direction, huge magnitude) collapses routing
+  only at t≈0.5. The mechanism→feature attack path is untested and flagged
+  in Limitations as a new architecture-specific surface.
 - **`fw_cycle_model.py`**: analytical per-invocation latency from the actual
   INT8 op graphs (TFLite flatbuffer) on Cortex-M4F @168 MHz.
 

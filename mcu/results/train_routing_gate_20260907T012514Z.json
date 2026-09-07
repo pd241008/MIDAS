@@ -1,0 +1,20 @@
+{
+  "timestamp": "20260907T012514Z",
+  "script": "train_routing_gate.py",
+  "git_commit": "7b78476",
+  "config": {
+    "d": 12,
+    "seed": 42,
+    "lam": 0.001,
+    "split": "80/20 per source"
+  },
+  "results": {
+    "gate_routing_acc": 1.0,
+    "gate_routed_deployment_acc": 0.8766,
+    "oracle_routed_deployment_acc": 0.8766,
+    "n_misrouted": 1
+  },
+  "extra": {
+    "architecture": "ridge-logistic on the unified 12-dim feature vector; 12x1 FC + logistic LUT; runs at the MCU fusion point in parallel with W-window rotation, before specialist Invoke"
+  }
+}
