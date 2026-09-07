@@ -4,8 +4,10 @@ deployed INT8 specialists, INCLUDING cross-source rows.
 
 Evaluates both deployed TFLM INT8 specialists (models/mcu_specialist_*_int8.tflite)
 on NSL-sourced AND UNSW-sourced held-out rows (deterministic 20% split, seed 42,
-matching qat_export_specialists.py). The gate already splits by source; this
-quantifies whether accuracy also differs by source (Section VII-A / Table hw_results).
+matching qat_export_specialists.py). The routing mechanism that separates the
+sources at inference time is measured in train_routing_gate.py (the routing
+gate); this script quantifies whether accuracy ALSO differs by source, i.e.
+whether a single merged classifier would work (Section VII-A / Table hw_results).
 """
 import json
 import os

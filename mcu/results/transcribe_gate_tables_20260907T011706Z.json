@@ -1,0 +1,256 @@
+{
+  "timestamp": "20260907T011706Z",
+  "script": "transcribe_gate_tables.py",
+  "git_commit": "fcda0f4",
+  "config": {
+    "n200": 200,
+    "n800": 800
+  },
+  "results": {
+    "rows": [
+      {
+        "source": "nsl",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.05_20",
+        "epsilon": 0.05,
+        "T": 20,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.345,
+          "adaptive_asr": 0.65,
+          "gap": 0.305
+        },
+        "n800": {
+          "naive_asr": 0.38,
+          "adaptive_asr": 0.6663,
+          "gap": 0.2863,
+          "gap_se": 11.964
+        }
+      },
+      {
+        "source": "nsl",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.1_50",
+        "epsilon": 0.1,
+        "T": 50,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.485,
+          "adaptive_asr": 0.845,
+          "gap": 0.36
+        },
+        "n800": {
+          "naive_asr": 0.5312,
+          "adaptive_asr": 0.8575,
+          "gap": 0.3263,
+          "gap_se": 15.1454
+        }
+      },
+      {
+        "source": "nsl",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.2_100",
+        "epsilon": 0.2,
+        "T": 100,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.77,
+          "adaptive_asr": 0.915,
+          "gap": 0.145
+        },
+        "n800": {
+          "naive_asr": 0.7863,
+          "adaptive_asr": 0.9387,
+          "gap": 0.1525,
+          "gap_se": 9.0821
+        }
+      },
+      {
+        "source": "nsl",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.05_20",
+        "epsilon": 0.05,
+        "T": 20,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.975,
+          "adaptive_asr": 0.975,
+          "gap": 0.0
+        },
+        "n800": {
+          "naive_asr": 0.985,
+          "adaptive_asr": 0.9812,
+          "gap": -0.0038,
+          "gap_se": -0.5823
+        }
+      },
+      {
+        "source": "nsl",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.1_50",
+        "epsilon": 0.1,
+        "T": 50,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.885,
+          "adaptive_asr": 0.95,
+          "gap": 0.065
+        },
+        "n800": {
+          "naive_asr": 0.9237,
+          "adaptive_asr": 0.9175,
+          "gap": -0.0062,
+          "gap_se": -0.4624
+        }
+      },
+      {
+        "source": "nsl",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.2_100",
+        "epsilon": 0.2,
+        "T": 100,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.765,
+          "adaptive_asr": 0.81,
+          "gap": 0.045
+        },
+        "n800": {
+          "naive_asr": 0.8175,
+          "adaptive_asr": 0.8425,
+          "gap": 0.025,
+          "gap_se": 1.3318
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.05_20",
+        "epsilon": 0.05,
+        "T": 20,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.795,
+          "adaptive_asr": 0.795,
+          "gap": 0.0
+        },
+        "n800": {
+          "naive_asr": 0.7063,
+          "adaptive_asr": 0.6937,
+          "gap": -0.0125,
+          "gap_se": -0.5456
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.1_50",
+        "epsilon": 0.1,
+        "T": 50,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.7,
+          "adaptive_asr": 0.695,
+          "gap": -0.005
+        },
+        "n800": {
+          "naive_asr": 0.5687,
+          "adaptive_asr": 0.5775,
+          "gap": 0.0088,
+          "gap_se": 0.3538
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "coupled",
+        "vulnerable": true,
+        "config": "eps0.2_100",
+        "epsilon": 0.2,
+        "T": 100,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.565,
+          "adaptive_asr": 0.63,
+          "gap": 0.065
+        },
+        "n800": {
+          "naive_asr": 0.4725,
+          "adaptive_asr": 0.4913,
+          "gap": 0.0188,
+          "gap_se": 0.7506
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.05_20",
+        "epsilon": 0.05,
+        "T": 20,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.975,
+          "adaptive_asr": 0.99,
+          "gap": 0.015
+        },
+        "n800": {
+          "naive_asr": 0.9613,
+          "adaptive_asr": 0.97,
+          "gap": 0.0087,
+          "gap_se": 0.9608
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.1_50",
+        "epsilon": 0.1,
+        "T": 50,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.895,
+          "adaptive_asr": 0.92,
+          "gap": 0.025
+        },
+        "n800": {
+          "naive_asr": 0.8725,
+          "adaptive_asr": 0.8688,
+          "gap": -0.0038,
+          "gap_se": -0.2235
+        }
+      },
+      {
+        "source": "unsw",
+        "basis": "fixed",
+        "vulnerable": false,
+        "config": "eps0.2_100",
+        "epsilon": 0.2,
+        "T": 100,
+        "alpha": 0.01,
+        "n200": {
+          "naive_asr": 0.82,
+          "adaptive_asr": 0.865,
+          "gap": 0.045
+        },
+        "n800": {
+          "naive_asr": 0.8313,
+          "adaptive_asr": 0.8337,
+          "gap": 0.0025,
+          "gap_se": 0.1339
+        }
+      }
+    ]
+  },
+  "extra": {
+    "gate_rule": "|gap| > 0.02 AND gap/SE > 1.0 on fresh pool"
+  }
+}

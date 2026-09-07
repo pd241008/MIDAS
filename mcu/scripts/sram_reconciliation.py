@@ -105,6 +105,11 @@ def main():
     }
     midas_total = sum(midas_tier.values())
 
+    # Routing gate (two-specialist deployment): 12x1 FC w + bias, int8 (13 params)
+    # + fp scale/zero ~= 21 B, plus the logistic LUT lives in flash (rodata).
+    gate = {"routing_gate (w8+b8 int8 + scale/zero, 12x1 FC)": 21}
+    gate_total = sum(gate.values())
+
     # Reference: paper's ~14KB / 7.3 % number as 2 x d^2 x f32 at d=42
     ref42 = {"C_base+C_rotated @d=42": 2 * 42 * 42 * 4,
              "7.3 % of 192 KB": round(192 * 1024 * 0.073)}
@@ -116,12 +121,15 @@ def main():
         "flash_total_bytes": flash_total,
         "midas_algorithmic_tier_d12": midas_tier,
         "midas_algorithmic_tier_d12_total": midas_total,
+        "routing_gate_deployment": gate,
+        "routing_gate_total_bytes": gate_total,
+        "deployed_midas_total_incremental_bytes": midas_total + gate_total,
         "paper_ref_14112B_reconstructed": ref42,
         "interpretation":
             "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 "
             "(14,112 B = 7.35%). Device SRAM (17.1 KB incl 16 KB TFLM arena) is a DIFFERENT "
             "quantity. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier "
-            "(ring+c matrices+state) = ~1.7 KB incremental over the TFLM baseline.",
+            "(ring+c matrices+state) + routing gate = ~1.72 KB incremental over the TFLM baseline.",
         "note_window":
             "g_win (480 B W-window) is current-py optimized out as a dead store (only "
             "written, never read until the on-device defense lands); it reappears when the "
@@ -144,6 +152,11 @@ def main():
     for k, v in midas_tier.items():
         print(f"  {v:6d} B   {k}")
     print(f"  {midas_total:6d} B  TOTAL = {midas_total/1024:.1f} KB")
+    print("\n== routing gate (two-specialist deployment) ==")
+    for k, v in gate.items():
+        print(f"  {v:6d} B   {k}")
+    print(f"  {midas_total + gate_total:6d} B  CUMULATIVE MIDAS tier + gate = "
+          f"{(midas_total+gate_total)/1024:.2f} KB incremental over TFLM baseline")
     print(f"\n== paper '~14KB / 7.3%' reconstruction ==")
     for k, v in ref42.items():
         print(f"  {v:6d} B   {k}")
