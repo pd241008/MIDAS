@@ -35,5 +35,11 @@ According to RM0090 + AN4031, USART2_RX is **DMA1 Stream5 Channel4**
 
 ## Follow-ups
 
-- Electrical validation on real PA3 bytes still needs a USB-UART dongle/wire
-  (see ADR 0003).
+- Electrical validation on real PA3 bytes: closed via USART **HDSEL single-wire
+  loopback** (RM0433). With PA2 pulled up (`PUPDR` bit 2 — required in
+  half-duplex; without it the floating line frames every byte with `FE`), real
+  TX bytes echo into the same wire, DMA1-S5 feeds the ring, the IDLE handler
+  parses them: `g_idle_cnt=0x0a`, `SR=0xc0` (no FE), `g_win_cnt` 50→55, ring
+  holds clean ASCII. See ADR 0003 and `mcu/fw/README.md` §Hardware validation.
+  External host bytes over a USB-UART dongle remain the only unexercised leg
+  (the Discovery's ST-Link VCP is not routed to USART2, UM1472 §6.1.3).

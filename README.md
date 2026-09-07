@@ -306,21 +306,26 @@ already certify the counter.
 cargo test
 ```
 
-18 unit tests covering momentum computation, penetration epsilon (orthogonal,
+47 tests (`cargo test --all`): 37 unit + 1 in `edge`, 9 manifold/edge
+integration — covering momentum computation, penetration epsilon (orthogonal,
 anti-aligned, zero-norm edge cases), Givens rotation, phase boundary, budget-gated
-fallback, ring buffer eviction, and CSV dataset loading.
+fallback, ring buffer eviction, manifold PCA-2 basis reconstruction, and CSV
+dataset loading. (`sla_load_test` is feature-gated `tflite`; `cargo test`
+without `--features tflite` still builds+runs everything else.)
 
 ## TODO
 
 - [x] Real TFLite C++ FFI (`libtensorflowlite_c.so`) behind `--features tflite`
 - [x] PyTorch surrogate → TFLite export (float32 / fp16 / dynamic-int8 / full-int8)
-- [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
-- [ ] Full C&W L2 attack implementation
-- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
-- [x] MCU tier: measured on-device DWT cycle counts via SWD — T_inf = 15,719/15,718 cyc (~0.094 ms) per specialist, stdev 0 over 50 runs; DWT↔SysTick agree ±3 cyc over 8.4e6; counter rate ≈168.6 MHz vs host clock; analytical fw_cycle_model.py (0.035 ms) is a 2.65× underestimate; GPIO-toggle-vs-DWT scope leg still pending external logic analyzer
+- [x] Load manifold centroid from `config.manifold_path` — live: `rotation_thread.rs` loads `data/manifold_real.npy` and computes a real **PCA-2** fixed basis (`manifold::pca2`, Gram-Schmidt fallback); bases persisted (`results/basis.json`, `mcu/features/manifold_basis.json`)
+- [x] Full C&W L2 attack — reference battery in `shadow/` (`cw_attack.py` + `run_cw_real.py`, d=42 real UNSW-NB15, naive vs adaptive on fixed-PCA2 and attacker-coupled) → `results/pi/cw_l2_*` + baselines/transfer; note: the Rust `attacks.rs::cw_l2_attack` is implemented but not wired to a binary
+- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (60.9 KB flash / 18.7 KB SRAM incl. 1,050 B non-production DWT capture + DMA RX ring + window)
+- [x] MCU tier: measured on-device DWT cycle counts via SWD — T_inf = 15,719/15,718 cyc (~0.094 ms) per specialist, stdev 0 over 50 runs; DWT↔SysTick agree ±3 cyc over 8.4e6; counter rate ≈168.6 MHz vs host clock; analytical fw_cycle_model.py (0.035 ms) is a 2.65× underestimate; GPIO-toggle-vs-DWT scope leg done via Saleae Logic 8 (5.38 Hz PA2 square wave, 50/50 duty, 645/645 clean half-periods, plus a DWT↔LA cross-check: 7.580 ms pulses × DWT 1,273,545 cyc → DWT rate 168.0 MHz, artifacts in `results/hardware/`)
 - [x] MCU tier: on-device defense pipeline (gate + theta + fixed-basis rotation + routed Invoke) DWT-measured per stage over 50 frames — T_sense 4,705 / T_theta 284 / T_gate 117 / T_rotate 839 / T_inf 16,320 cyc, full path 0.1321 ms = 1.32% of 10 ms SLA; also fixed the latent USART2_RX stream (now DMA1 Stream5 Ch4 — the old macro addressed DMA1 Str6 w/ DMA1 unclocked, dropping all writes) revealed by the on-device ingest trace
 - [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
-- [ ] Experimental results (partially populated in `results/`)
+- [x] MCU tier: per-source baseline battery vs the deployed INT8 specialists (PGD eps=0.1/T=50 + C&W-L2 iters=100 against undefended / adversarial-training / input-smoothing / Chen query-blinding / MIDAS rotation=DACM, n=100/source) — `mcu/features/mcu_tier_baselines.json` + `mcu/results/run_mcu_tier_baselines_*.json`, script `mcu/scripts/run_mcu_tier_baselines.py`. On PGD the strong on-device baseline is Chen query-blinding (0.44/0.30 NSL/UNSW defense-success; counts its own rejection as hold), followed by undefended (0.08/0.13) and DACM adaptive (0.06/0.04); adv-training ≈ 0 and input-smoothing adaptive = 0. DACM adaptive is cheaply defeated (mirrors Edge 0.06). On C&W-L2 the int8 specialist is invariant — every defense-success = 1.000 (0 flips, incl. the continuous dequant replica); consistent with Edge's float undefended 0.945, so the C&W row is a degenerate-equal-1.0 insensitivity on-device, not a baseline comparison.
+- [x] MCU tier: ring-buffer **W ablation** (W ∈ {2,3,4,6,8,10}, same 200-sample set across W, both bases) — `mcu/features/w_ablation_report.json` + `mcu/results/w_ablation_*.json`, script `mcu/scripts/w_ablation.py`. NSL gate passes at **every** W (vulnerable gaps +0.13..+0.41, stable), fixed-basis gaps flat — the adaptive-vulnerability control and the deployed defense are window-size invariant. UNSW verdicts flutter ±0.05 around the 0.02 rule at N=200 (pass W=2,3,4,10 / fail W=6,8) — confirmed as sampling noise matching the N=800 collapse, not a W effect.
+- [x] Experimental results — `results/` + `results/pi/` populated (PGD sweep, FFI validation, FPR, latency distribution/reproducibility, SLA load test, prod-FFI deployment, transfer, C&W battery, gate tables); residual: `results/pi/prod_ffi_deployment.json` has open `pending` items
 
 ## License
 
