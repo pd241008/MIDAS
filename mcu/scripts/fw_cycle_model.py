@@ -42,6 +42,18 @@ CYC_QUANT = 16
 CYC_ACTIVATION_ELEM = 48
 CYC_INTERP = 2000
 
+# Per-stage cycle cost (all ANALYTICAL - no board, DWT unmeasured):
+#   T_sense  : DMA moves bytes (0 CPU); USART2 IDLE handler + fixed-point
+#              ASCII parse. One frame ≈ 84 chars ("0.5000,...,0.5000\n").
+#              ~20-80 cycles/char incl. dispatch + float accumulation.
+#   T_theta  : epsilon_p over W=10 trajectory -> gamma comparison -> angle.
+#   T_rotate : Givens rotation of one d-vector in the [u,v] plane
+#              (2 dot over d + 2 saxpy) ~ 4d flops + angle scaling.
+SENSE_CHARS_PER_FRAME = 84
+CYC_PER_CHAR = {"optimistic": 20, "typical": 45, "conservative": 80}
+CYC_THETA = 200
+CYC_ROTATE = 4 * 12 + 120   # 4d + angle bookkeeping for d=12
+
 
 def tensor_dims(t):
     if t is None or t.ShapeIsNone():
@@ -94,16 +106,26 @@ def estimate(graph):
     return ops, tot_mac
 
 
-def per_scenario(ops, cyc_mac):
-    total = CYC_INTERP
+def per_scenario(ops, cyc_mac, cyc_char):
+    t_inf = CYC_INTERP
     for o in ops:
         if o["op"] == "FULLY_CONNECTED":
-            total += CYC_FC_BASE + o["outs"] * (o["macs"] // max(o["outs"], 1) * cyc_mac + CYC_QUANT)
+            t_inf += CYC_FC_BASE + o["outs"] * (o["macs"] // max(o["outs"], 1) * cyc_mac + CYC_QUANT)
         else:
-            total += o["elems"] * CYC_ACTIVATION_ELEM
-    ms = total / CLK_HZ * 1e3
-    return {"cycles": total, "latency_ms": round(ms, 4), "sla_ms": SLA_MS,
-            "sla_ratio": round(ms / SLA_MS, 4)}
+            t_inf += o["elems"] * CYC_ACTIVATION_ELEM
+    t_sense = SENSE_CHARS_PER_FRAME * cyc_char
+    t_theta = CYC_THETA
+    t_rot = CYC_ROTATE
+    total = t_sense + t_theta + t_rot + t_inf
+    ms = lambda c: c / CLK_HZ * 1e3
+    return {"cycles": total, "latency_ms": round(ms(total), 4), "sla_ms": SLA_MS,
+            "sla_ratio": round(ms(total) / SLA_MS, 4),
+            "stages_cycles": {"T_sense": t_sense, "T_theta": t_theta,
+                              "T_rotate": t_rot, "T_inf": t_inf},
+            "stages_ms": {k: round(ms(v), 4) for k, v in
+                          (("T_sense", t_sense), ("T_theta", t_theta),
+                           ("T_rotate", t_rot), ("T_inf", t_inf))},
+            "t_inf_only_ms": round(ms(t_inf), 4)}
 
 
 def main():
@@ -117,7 +139,11 @@ def main():
     for tag, path in models.items():
         graph = load_graph(path)
         ops, tot_mac = estimate(graph)
-        scen = {s: per_scenario(ops, c) for s, c in CYC_MAC_SCEN.items()}
+        scen = {s: per_scenario(ops, c_mac, c_chr)
+                for (s, c_mac), c_chr in
+                zip(CYC_MAC_SCEN.items(), (CYC_PER_CHAR["optimistic"],
+                                           CYC_PER_CHAR["typical"],
+                                           CYC_PER_CHAR["conservative"]))}
         per_model[tag] = {
             "model": os.path.basename(path),
             "bytes": int(np.fromfile(path, dtype=np.uint8).size),
@@ -133,15 +159,21 @@ def main():
             print(f"   {o['op']:<15s} w_dims={o['w_dims']}  macs/elems={o['macs']}")
         print(f"   total MACs: {tot_mac}")
         for s, r in scen.items():
-            print(f"   [{s:>12s}] {r['cycles']:>7d} cyc = {r['latency_ms']:.4f} ms "
-                  f"({r['sla_ratio']*100:.2f}% of {SLA_MS} ms SLA)")
+            st = r["stages_ms"]
+            print(f"   [{s:>12s}] {r['cycles']:>6d} cyc = {r['latency_ms']:.4f} ms "
+                  f"({r['sla_ratio']*100:.2f}% of {SLA_MS} ms SLA)   "
+                  f"[sense {st['T_sense']:.4f} | theta {st['T_theta']:.4f} | "
+                  f"rot {st['T_rotate']:.4f} | T_inf {st['T_inf']:.4f}]")
 
     report = {"experiment": "Item 6+cycle model: analytical INT8 inference latency on STM32F407 @168 MHz",
-              "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed.",
+              "note": "Host-side analytical estimate (no board attached); DWT CYCCNT prints on mcu_fw are ground truth once flashed. GPIO-toggle-vs-DWT cross-check: NOT RUN (no hardware). T_inf = classifier Invoke only; total adds T_sense (DMA IDLE + ASCII parse), T_theta, T_rotate. WARNING: T_theta/T_rotate are modeled from the Python defense (not implemented on-device), and T_sense only counts the DMA IDLE handler (the 115200-baud UART wall-clock is a separate ~7 ms link budget, not MCU compute).",
               "clk_hz": CLK_HZ, "sla_budget_ms": SLA_MS,
               "cost_model": {"cyc_mac": CYC_MAC_SCEN, "fc_base": CYC_FC_BASE,
                              "quant_per_out": CYC_QUANT, "activation_elem": CYC_ACTIVATION_ELEM,
-                             "interpreter_overhead": CYC_INTERP},
+                             "interpreter_overhead": CYC_INTERP,
+                             "sense_chars_frame": SENSE_CHARS_PER_FRAME,
+                             "cyc_per_char": CYC_PER_CHAR,
+                             "cyc_theta": CYC_THETA, "cyc_rotate": CYC_ROTATE},
               "models": per_model,
               "verdict": {t: per_model[t]["scenarios"]["typical"] for t in models}}
 

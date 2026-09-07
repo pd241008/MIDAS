@@ -223,10 +223,13 @@ plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
 I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
 circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
 feeds a W=10 float window for the defense, and quantizes the latest vector
-into the INT8 input tensor. Estimated per-invocation latency
-(`fw_cycle_model.py`): **~0.035 ms typical (0.35% of the 10 ms SLA)** —
-host-side analytical estimate; on-board DWT cycle counts are unmeasured
-because the hardware was dropped.
+into the INT8 input tensor. Estimated per-stage latency
+(`fw_cycle_model.py`): **T_inf ≈ 0.035 ms | full defense path ≈ 0.060 ms
+typical (0.60% of the 10 ms SLA)**, where the sensing stage (DMA IDLE +
+ASCII parse) is ~63% of T_inf and the T_theta/T_rotate stages are modeled
+from the Python defense (not yet implemented on-device). All numbers are
+host-side analytical — DWT cycle counts and the GPIO-toggle-vs-DWT cross-check
+are unmeasured because the hardware was dropped.
 
 ## Tests
 
@@ -245,7 +248,7 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
 - [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
-- [x] MCU tier: host-side cycle model (analytical ~0.035 ms/invoke @168 MHz, 0.35% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT unmeasured — hardware dropped
+- [x] MCU tier: host-side cycle model (analytical T_inf ~0.035 ms, full defense path ~0.060 ms typical, 0.60% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT + GPIO-toggle cross-check unmeasured — hardware dropped
 - [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 
