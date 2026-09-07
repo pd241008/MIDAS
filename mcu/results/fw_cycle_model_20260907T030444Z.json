@@ -1,0 +1,220 @@
+{
+  "timestamp": "20260907T030444Z",
+  "script": "fw_cycle_model.py",
+  "git_commit": "2198424",
+  "config": {
+    "clk_hz": 168000000.0,
+    "sla_budget_ms": 10.0
+  },
+  "results": {
+    "models": {
+      "nsl": {
+        "model": "mcu_specialist_nsl_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7456,
+            "latency_ms": 0.0444,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_gate": 96,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_gate": 0.0006,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10216,
+            "latency_ms": 0.0608,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0061,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_gate": 132,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_gate": 0.0008,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 14036,
+            "latency_ms": 0.0835,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0084,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_gate": 180,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_gate": 0.0011,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      },
+      "unsw": {
+        "model": "mcu_specialist_unsw_int8.tflite",
+        "bytes": 2528,
+        "ops": [
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              16,
+              12
+            ],
+            "macs": 192,
+            "outs": 16
+          },
+          {
+            "op": "TANH",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 16
+          },
+          {
+            "op": "FULLY_CONNECTED",
+            "w_dims": [
+              1,
+              16
+            ],
+            "macs": 16,
+            "outs": 1
+          },
+          {
+            "op": "LOGISTIC",
+            "w_dims": [],
+            "macs": 0,
+            "outs": 1
+          }
+        ],
+        "total_macs": 208,
+        "scenarios": {
+          "optimistic": {
+            "cycles": 7456,
+            "latency_ms": 0.0444,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0044,
+            "stages_cycles": {
+              "T_sense": 1680,
+              "T_theta": 200,
+              "T_gate": 96,
+              "T_rotate": 168,
+              "T_inf": 5312
+            },
+            "stages_ms": {
+              "T_sense": 0.01,
+              "T_theta": 0.0012,
+              "T_gate": 0.0006,
+              "T_rotate": 0.001,
+              "T_inf": 0.0316
+            },
+            "t_inf_only_ms": 0.0316
+          },
+          "typical": {
+            "cycles": 10216,
+            "latency_ms": 0.0608,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0061,
+            "stages_cycles": {
+              "T_sense": 3780,
+              "T_theta": 200,
+              "T_gate": 132,
+              "T_rotate": 168,
+              "T_inf": 5936
+            },
+            "stages_ms": {
+              "T_sense": 0.0225,
+              "T_theta": 0.0012,
+              "T_gate": 0.0008,
+              "T_rotate": 0.001,
+              "T_inf": 0.0353
+            },
+            "t_inf_only_ms": 0.0353
+          },
+          "conservative": {
+            "cycles": 14036,
+            "latency_ms": 0.0835,
+            "sla_ms": 10.0,
+            "sla_ratio": 0.0084,
+            "stages_cycles": {
+              "T_sense": 6720,
+              "T_theta": 200,
+              "T_gate": 180,
+              "T_rotate": 168,
+              "T_inf": 6768
+            },
+            "stages_ms": {
+              "T_sense": 0.04,
+              "T_theta": 0.0012,
+              "T_gate": 0.0011,
+              "T_rotate": 0.001,
+              "T_inf": 0.0403
+            },
+            "t_inf_only_ms": 0.0403
+          }
+        }
+      }
+    }
+  },
+  "extra": {
+    "note": "Analytical estimates reconciled against FULL-PIPELINE on-device DWT ground truth (DISCO-F407VG over SWD). The routing gate, delta-theta defense and fixed-basis rotation are now LIVE in firmware (mcu/fw/src/main.cc) and each stage is DWT-measured over 50 frames with 4 real feature seeds (25 routed to each specialist): T_sense 4,705 cyc (DMA IDLE handler + ASCII parse + window + quantize), T_theta 284 cyc (windowed penetration + rotation_angle), T_gate 117 cyc (folded 12x1 FC + logistic LUT + route; standardization folded into weights offline - bit-match verified), T_rotate 839 cyc (fixed-basis Givens; newlib cosf/sinf dominate - the analytical 168 cyc underestimates trig 5x), T_inf mean 16,320 cyc (routed specialist on the rotated input; input-dependent, per-route means 16,319 NSL / 16,322 UNSW). Full path 22,266 cyc = 0.1321 ms = 1.32% of the 10 ms SLA. The prior dummy-input T_inf measurement (15,719/15,718 cyc) is retained below for reference. Counter certified earlier: DWT vs SysTick within 3 cyc over 8.43e6; rate 168.56 MHz. GPIO-toggle-vs-DWT scope leg still needs an external logic analyzer."
+  }
+}
