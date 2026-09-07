@@ -218,8 +218,9 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [x] PyTorch surrogate → TFLite export (float32 / fp16 / dynamic-int8 / full-int8)
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
-- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (52.2 KB flash / 16.8 KB SRAM)
-- [ ] MCU tier: host-side cycle model (estimate 168 MHz invocation latency from int8 op counts; on-board DWT unmeasured — hardware dropped)
+- [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
+- [x] MCU tier: host-side cycle model (analytical ~0.035 ms/invoke @168 MHz, 0.35% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT unmeasured — hardware dropped
+- [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 
 ## License

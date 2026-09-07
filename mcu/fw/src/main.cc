@@ -25,6 +25,15 @@ static constexpr int kInputDim   = 12;
 static constexpr int kArenaSize  = 16 * 1024;  /* 16 KB tensor arena */
 static constexpr int kNumIters   = 5;           /* repeat each model for stable timing */
 
+/* Item 6 (DMA ring buffer): host streams feature vectors over USART2 RX.
+ * DMA2 Stream5 Channel4 dumps bytes into a 256 B circular buffer; the
+ * IDLE-line IRQ frames each complete vector ("f1,...,f12\n") and shifts it
+ * into a W-deep float window for the defense, quantizing the latest vector
+ * into g_input for inference.
+ */
+static constexpr int   kRingBufSize = 256;   /* DMA RX circular byte buffer  */
+static constexpr int   kWindowLen   = 10;    /* W feature vectors in window  */
+
 /* NSL quantization params (from tflite introspection):
  *   input  scale=0.003921569 zp=-128  (x/255 - 128, input domain [0,255])
  *   output scale=1.0/256   zp=0      (fixed-point [0,1) mapped to uint8)
@@ -96,9 +105,126 @@ static tflite::MicroInterpreter *g_nsl_interp = nullptr;
 static tflite::MicroInterpreter *g_unsw_interp = nullptr;
 static uint8_t g_arena[kArenaSize];
 
-/* Sample NSL input (dummy probe values — real pipeline fills from ring buffer) */
-static int8_t g_input[kInputDim];
+/* ---- DMA RX ring buffer + vector parser state (Item 6) ---- */
+static uint8_t  g_dma_rx[kRingBufSize];
+static volatile uint16_t g_dma_head = 0;      /* bytes already consumed      */
+static float    g_win[kWindowLen][kInputDim]; /* trailing W feature vectors  */
+static uint32_t g_win_cnt = 0;                /* vectors ingested (total)    */
+static volatile int  g_new_frame = 0;         /* full window + new frame     */
+static int8_t   g_input[kInputDim];           /* quantized current vector    */
 
+static float    g_vec_tmp[kInputDim];
+static int      g_vec_field = 0;
+static char     g_num[32];
+static int      g_num_len = 0;
+
+/* Compact fixed-point float parser ("-1.2345") for the host's %f output. */
+static float parse_float(const char *s, int len)
+{
+    int i = 0;
+    float neg = 1.0f;
+    if (i < len && s[i] == '-') { neg = -1.0f; i++; }
+    float v = 0.0f;
+    while (i < len && s[i] >= '0' && s[i] <= '9') { v = v * 10.0f + (float)(s[i] - '0'); i++; }
+    if (i < len && s[i] == '.') {
+        i++;
+        float frac = 0.1f;
+        while (i < len && s[i] >= '0' && s[i] <= '9') {
+            v += (float)(s[i] - '0') * frac; frac *= 0.1f; i++;
+        }
+    }
+    return neg * v;
+}
+
+/* Quantize a [0,1] normalized feature to int8 (scale=1/255, zp=-128). */
+static int8_t quantize_feature(float x)
+{
+    int q = (int)(x * 255.0f + 0.5f) + kInputZp;
+    if (q < -128) q = -128;
+    if (q >  127) q =  127;
+    return (int8_t)q;
+}
+
+/* Field terminator: commit the current decimal into the partial vector. */
+static void commit_field(void)
+{
+    if (g_num_len > 0 && g_vec_field < kInputDim) {
+        g_vec_tmp[g_vec_field] = parse_float(g_num, g_num_len);
+    }
+    g_num_len = 0;
+}
+
+/* End of a host frame: push vector into the window, quantize latest into g_input. */
+static void finalize_vector(void)
+{
+    if (g_vec_field != kInputDim - 1) { return; }
+    for (int i = 0; i < kInputDim; i++) {
+        g_win[g_win_cnt % kWindowLen][i] = g_vec_tmp[i];
+        g_input[i] = quantize_feature(g_vec_tmp[i]);
+    }
+    g_win_cnt++;
+    if (g_win_cnt >= (uint32_t)kWindowLen) { g_new_frame = 1; }
+}
+
+static void parse_rx_char(char c)
+{
+    if (c == ',' || c == '\n' || c == '\r') {
+        commit_field();
+        if (c == ',') {
+            g_vec_field++;
+        } else {
+            if (g_vec_field == kInputDim - 1) { finalize_vector(); }
+            g_vec_field = 0;
+        }
+    } else if (g_num_len < (int)sizeof(g_num) - 1) {
+        g_num[g_num_len++] = c;
+    }
+}
+
+static void consume_rx_bytes(const uint8_t *buf, uint16_t n)
+{
+    for (uint16_t k = 0; k < n; k++) {
+        parse_rx_char((char)buf[(g_dma_head + k) % kRingBufSize]);
+    }
+    g_dma_head = (uint16_t)((g_dma_head + n) % kRingBufSize);
+}
+
+/* DMA2 Stream5 Channel4 = USART2_RX, circular into g_dma_rx. */
+static void dma_uart_rx_init(void)
+{
+    /* Reset the stream (EN=0, wait for hardware to clear) */
+    DMA2_Stream5->CR = 0;
+    while (DMA2_Stream5->CR & 1u) {}
+    DMA2_Stream5->CR = (4u << 25)      /* CHSEL=4 (USART2_RX) */
+                     | (1u << 10)      /* MINC  */
+                     | (1u << 8);      /* CIRC  */
+    DMA2_Stream5->NDTR = (uint16_t)kRingBufSize;
+    DMA2_Stream5->PAR  = (uint32_t)&USART2->DR;
+    DMA2_Stream5->M0AR = (uint32_t)g_dma_rx;
+    DMA2_Stream5->CR  |= 1u;           /* EN */
+
+    /* USART2: connect RX to DMA and frame on IDLE line breaks */
+    USART2->CR3 |= USART_CR3_DMAR;
+    USART2->CR1 |= USART_CR1_IDLEIE;
+}
+
+/* Frame boundary: DMA owns byte reads; pause DMAR while clearing IDLE (HAL-safe). */
+extern "C" void USART2_IRQHandler(void)
+{
+    if (USART2->SR & USART_SR_IDLE) {
+        USART2->CR3 &= ~USART_CR3_DMAR;
+        (void)USART2->SR;
+        (void)USART2->DR;
+        USART2->CR3 |= USART_CR3_DMAR;
+
+        uint16_t tail = (uint16_t)(kRingBufSize - (DMA2_Stream5->NDTR & 0xFFFF));
+        uint16_t avail = (uint16_t)((tail - g_dma_head + kRingBufSize) % kRingBufSize);
+        if (avail >= (uint16_t)kRingBufSize) { avail = (uint16_t)(kRingBufSize - 1); }
+        if (avail > 0) { consume_rx_bytes(g_dma_rx, avail); }
+    }
+}
+
+/* Sample NSL input (dummy probe values — real pipeline fills from ring buffer) */
 static void make_dummy_input(void)
 {
     /* Placeholder: uniform [0,1] features → int8 quantization.
@@ -108,10 +234,7 @@ static void make_dummy_input(void)
         0.6f, 0.8f, 0.3f, 0.9f, 0.1f, 0.5f
     };
     for (int i = 0; i < kInputDim; i++) {
-        int q = (int)(dummy[i] * 255.0f + 0.5f) + kInputZp;
-        if (q < -128) q = -128;
-        if (q >  127) q =  127;
-        g_input[i] = (int8_t)q;
+        g_input[i] = quantize_feature(dummy[i]);
     }
 }
 
@@ -181,6 +304,9 @@ extern "C" int main(void)
 {
     /* Init peripherals */
     uart2_init();
+    dma_uart_rx_init();
+    /* USART2 IRQn = 38 → NVIC_ISER[1] bit 6 */
+    NVIC_ISER[1] |= (1u << 6);
     led_init();
     led_on(0);  /* green LED on = boot */
 
@@ -237,7 +363,17 @@ extern "C" int main(void)
     uart2_puts("=== DONE ===\n");
     led_on(0);  /* green = finished */
 
+    /* ---- Production ingest (Item 6): DMA ring buffer live ---- */
+    uart2_puts("=== PROD: DMA RX live. Host: 12 comma-separated floats + LF ===\n");
     while (1) {
+        if (g_new_frame) {
+            g_new_frame = 0;
+            led_on((g_win_cnt & 1u) ? 1 : 3);
+            run_model(g_nsl_interp, "NSL ");
+            run_model(g_unsw_interp, "UNSW");
+            led_off(1);
+            led_off(3);
+        }
         __asm volatile("wfi");
     }
     return 0;
