@@ -197,10 +197,16 @@ Host-side pipeline (in run order):
   zero-luck explanation (the single misrouted row still classified correctly).
   The two manifolds are linearly separable (dims 1 and 9 carry it) — the same
   fact that explains the 0.34/0.52 cross-generalization failure below. Gate
-  robustness: decision-plane margins are tight (median 0.144 std-units, 6.7%
-  of rows within 0.1) — empirical routing error is negligible but the
-  gate-as-attack-surface is flagged in Limitations (first-order,
-  feature-space probe only).
+  robustness, precisely defined in the report: (i) ADVERSARIAL metric — a
+  worst-case ε-ball in the gate's standardized-feature space (per-query
+  move perpendicular to the decision plane) misroutes 4.1%/6.7%/30.3% of
+  queries at ε=0.08/0.10/0.125; verified by direct perturbation; observed
+  routing error is still only 1/81,239 because violations need the
+  adversarial direction. (ii) GEOMETRIC reference, deliberately NOT an
+  attack metric — a per-query push a fraction t of the way to the *other*
+  source's centroid (heuristic direction, huge magnitude) collapses routing
+  only at t≈0.5. The mechanism→feature attack path is untested and flagged
+  in Limitations as a new architecture-specific surface.
 - **`fw_cycle_model.py`**: analytical per-invocation latency from the actual
   INT8 op graphs (TFLite flatbuffer) on Cortex-M4F @168 MHz.
 
@@ -241,21 +247,58 @@ All MCU-tier hyperparameters live in
 
 ### Firmware
 
-`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG (MathWorks flags no
-public DISCO-F407VG support; building the firmware is a pure host-side
-artifact). Build with `make` in `mcu/fw/`; produces `build/mcu_fw.{elf,bin,hex}`
-plus `build/mcu_fw.map`. Measured: **Flash 53.4 KB (5.2% of 1 MB), SRAM 17.4 KB
-(9.1% of 192 KB)**, arena 16 KB, both int8 specialists 2,528 B each. Hardware
-I/O is decoupled via USART2: a **DMA RX ring buffer** (Item 6, DMA2 Stream5
-circular + IDLE-line framing) ingests host feature vectors bypassing the CPU,
-feeds a W=10 float window for the defense, and quantizes the latest vector
-into the INT8 input tensor. Estimated per-stage latency
-(`fw_cycle_model.py`): **T_inf ≈ 0.035 ms | full defense path ≈ 0.061 ms
-typical (0.61% of the 10 ms SLA)** with rows per stage — T_sense (DMA IDLE +
-ASCII parse) ≈ 0.0225 ms, T_theta 0.0012, **T_gate 0.0008**, T_rotate 0.0010,
-T_inf 0.0353. All numbers are host-side analytical — DWT cycle counts and the
-GPIO-toggle-vs-DWT cross-check are unmeasured because the hardware was
-dropped.
+`mcu/fw/` is a bare-metal TFLM build for the DISCO-F407VG, flashed and measured
+on the real board over SWD (built with `make` in `mcu/fw/`; produces
+`build/mcu_fw.{elf,bin,hex}` plus `build/mcu_fw.map`; flashed via
+`st-flash write build/mcu_fw.bin 0x08000000`). Measured: **Flash 60.9 KB
+(5.9% of 1 MB)**, **on-device SRAM 18.7 KB (9.7% of 192 KB)** incl. 16 KB TFLM
+arena (1,050 B of benchmark DWT-capture arrays are non-production and separated
+in the reconciliation), both int8 specialists 2,528 B each. Hardware I/O is
+decoupled via USART2: a **DMA RX ring buffer** (Item 6, **DMA1 Stream5
+circular** — the correct USART2_RX mapping — + IDLE-line framing) ingests host
+feature vectors bypassing the CPU, feeds a W=10 float window for the defense,
+and quantizes the latest vector into the INT8 input tensor.
+
+**Measured on-device latency (SWD).** The routing gate, delta-theta defense
+and fixed-basis rotation are now **implemented in firmware** (not just modeled):
+per frame the pipeline runs DMA-IDLE ingest + ASCII parse + window push
+(T_sense), windowed penetration `eps` + `rotation_angle(eps)` (T_theta), the
+folded 12×1 gate FC + logistic LUT + route (T_gate; standardization folded
+into the weights offline, sign-agree 1.0 vs the host), the fixed-basis Givens
+rotation (T_rotate), then quantizes the rotated vector and invokes the
+*routed* specialist (T_inf). Each stage is timestamped with the DWT cycle
+counter into SRAM and read back over SWD; 50 frames over 4 real feature seeds
+(25 routed to each specialist). Counter certified two ways (DWT↔SysTick ±3 cyc
+over 8.43e6; rate ≈ 168.6 MHz vs host clock). Result:
+
+| stage | mean cyc | ms |
+|---|---|---|
+| T_sense (IDLE + parse + window + quantize) | 4,705 | 0.0279 |
+| T_theta (penetration + angle) | 284 | 0.0017 |
+| T_gate (folded FC + logistic LUT + route) | 117 | 0.0007 |
+| T_rotate (fixed-basis Givens, newlib cos/sin) | 839 | 0.0050 |
+| T_inf (routed INT8 specialist, rotated input) | 16,320 | 0.0968 |
+| **full path/frame** | **22,266** | **0.1321 = 1.32% of 10 ms** |
+
+The analytical `fw_cycle_model.py` typical (10,216 cyc) now under-predicts the
+measured full path by **2.18×**: T_sense/T_theta/T_gate land close to the
+estimates, while T_rotate real cost (839 cyc, dominated by newlib `cosf`/`sinf`)
+is ~5× the naive 168-cyc bookkeeping, and T_inf on *rotated real features*
+(~16.3 kcyc) runs a bit above the earlier dummy-input 15,719/15,718 cyc
+(retained as the per-specialist Invoke reference). Methodology notes: the
+board's ST-Link VCP (COM4) is not physically wired to USART2 (UM1472), so
+console output is captured over SWD rather than UART; the GPIO-toggle-vs-DWT
+leg of the cross-check (a scope-timed pulse) still needs an external logic
+analyzer, but the on-chip DWT↔SysTick agreement and the host-clock rate probe
+already certify the counter.
+
+## Docs
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — edge runtime architecture (3-thread pipeline, defense math).
+- [`docs/adr/`](docs/adr/) — architecture decision records (routing-gate deployment, gate-weight folding, defense-pipeline instrumentation, DMA1 S5 ingest, fixed rotation basis).
+- [`docs/postmortems/`](docs/postmortems/) — measurement/hardware failure post-mortems (DWT base bug, DMA stream/clock bug, NDTR-write rule, DWT window code-sinking, OpenOCD sampling stall).
+- [`docs/mcu-measurement-procedure.md`](docs/mcu-measurement-procedure.md) — reproducible recipe + published stage table for the on-device DWT measurement.
+- [`docs/paper_edits.md`](docs/paper_edits.md) — prose change log for the ICCD-2026 draft.
 
 ## Tests
 
@@ -274,7 +317,8 @@ fallback, ring buffer eviction, and CSV dataset loading.
 - [ ] Load manifold centroid from `config.manifold_path` (file exists at `data/manifold_real.npy`)
 - [ ] Full C&W L2 attack implementation
 - [x] MCU tier: QAT for full-INT8 (naive PTQ loses 2.1 pp on the saturated surrogate); TFLM conversion + firmware build (53.4 KB flash / 17.4 KB SRAM incl. DMA RX ring + window)
-- [x] MCU tier: host-side cycle model (analytical T_inf ~0.035 ms, full defense path ~0.060 ms typical, 0.60% of 10 ms SLA) — `mcu/scripts/fw_cycle_model.py`; on-board DWT + GPIO-toggle cross-check unmeasured — hardware dropped
+- [x] MCU tier: measured on-device DWT cycle counts via SWD — T_inf = 15,719/15,718 cyc (~0.094 ms) per specialist, stdev 0 over 50 runs; DWT↔SysTick agree ±3 cyc over 8.4e6; counter rate ≈168.6 MHz vs host clock; analytical fw_cycle_model.py (0.035 ms) is a 2.65× underestimate; GPIO-toggle-vs-DWT scope leg still pending external logic analyzer
+- [x] MCU tier: on-device defense pipeline (gate + theta + fixed-basis rotation + routed Invoke) DWT-measured per stage over 50 frames — T_sense 4,705 / T_theta 284 / T_gate 117 / T_rotate 839 / T_inf 16,320 cyc, full path 0.1321 ms = 1.32% of 10 ms SLA; also fixed the latent USART2_RX stream (now DMA1 Stream5 Ch4 — the old macro addressed DMA1 Str6 w/ DMA1 unclocked, dropping all writes) revealed by the on-device ingest trace
 - [x] MCU tier: adaptive-attacker gate + high-N recheck (Edge sample-size discipline); NSL PASS w/ caveat, UNSW not confirmed (per-source finding) — `mcu/results/adaptive_attacker_gate_20260906T180829Z.json`, `mcu/results/recheck_gate_n800_*.json`
 - [ ] Experimental results (partially populated in `results/`)
 

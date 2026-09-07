@@ -81,6 +81,9 @@ def categorize(syms):
         elif any(k in name for k in ("g_vec", "g_num", "g_input")):
             cat.setdefault("live ingest: parser + input", 0)
             cat["live ingest: parser + input"] += sz
+        elif "cyc" in name or "g_route" in name:  # benchmark instrumentation (non-production, DWT capture)
+            cat.setdefault("benchmark DWT capture arrays (non-production)", 0)
+            cat["benchmark DWT capture arrays (non-production)"] += sz
         else:
             cat.setdefault("state/pointers/other", 0)
             cat["state/pointers/other"] += sz
@@ -127,13 +130,19 @@ def main():
         "paper_ref_14112B_reconstructed": ref42,
         "interpretation":
             "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 "
-            "(14,112 B = 7.35%). Device SRAM (17.1 KB incl 16 KB TFLM arena) is a DIFFERENT "
-            "quantity. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier "
-            "(ring+c matrices+state) + routing gate = ~1.72 KB incremental over the TFLM baseline.",
-        "note_window":
-            "g_win (480 B W-window) is current-py optimized out as a dead store (only "
-            "written, never read until the on-device defense lands); it reappears when the "
-            "defense consumes it.",
+            "(14,112 B = 7.35%). Device SRAM (18.7 KB incl 16 KB TFLM arena, of which "
+            "1,150 B is benchmark DWT capture, non-production) and 60.9 KB flash are "
+            "DIFFERENT quantities. At d=12 the matrix pair collapses to 1,152 B; planned "
+            "MIDAS tier (ring+c matrices+state) + routing gate = ~1.72 KB incremental over "
+            "the TFLM baseline.",
+        "note_defense_port":
+            "The routing gate + fixed-basis Givens rotation are now LIVE on-device "
+            "(firmware main.cc, DWT-measured). The folded gate weights g_An/g_bn (52 B), the "
+            "offline-resolved basis g_b0/g_b1 (96 B) and the 64-entry sigmoid LUT (256 B) all "
+            "reside in .rodata (flash), so the gate/basis add NO linker-allocated SRAM beyond "
+            "g_x (48 B current-vector snapshot, live ingest). g_win (480 B W-window) is now "
+            "READ by penetration_epsilon_windowed (no longer a dead store). Benchmark-only: "
+            "g_stage_cyc[5][50] (1,000 B) + g_route[50] (50 B) DWT capture, separated above.",
     }
     out = os.path.join(MCU_DIR, "features", "sram_flash_reconciliation.json")
     with open(out, "w") as f:

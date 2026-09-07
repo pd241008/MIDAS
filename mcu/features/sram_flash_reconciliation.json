@@ -2,18 +2,19 @@
   "elf": "/root/workspace/workspace/03-Code/Projects/Legacy/Midas/mcu/fw/build/mcu_fw.elf",
   "on_device_SRAM": {
     "scratch (TFLM tensor arena)": 16384,
+    "benchmark DWT capture arrays (non-production)": 1050,
+    "state/pointers/other": 624,
     "middleware (MicroInterpreter + resolver)": 344,
     "newlib/stdio (FILE, reent)": 316,
     "live ingest: DMA byte ring": 256,
-    "live ingest: parser + input": 100,
-    "state/pointers/other": 40
+    "live ingest: parser + input": 100
   },
-  "on_device_SRAM_total_bytes": 17532,
+  "on_device_SRAM_total_bytes": 19166,
   "flash_sections": {
-    ".text": 54296,
+    ".text": 62316,
     ".data": 92
   },
-  "flash_total_bytes": 54388,
+  "flash_total_bytes": 62408,
   "midas_algorithmic_tier_d12": {
     "ring_buf (W=10 x d=12 x f32)": 480,
     "C_base (d^2 x f32)": 576,
@@ -30,6 +31,6 @@
     "C_base+C_rotated @d=42": 14112,
     "7.3 % of 192 KB": 14352
   },
-  "interpretation": "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 (14,112 B = 7.35%). Device SRAM (17.1 KB incl 16 KB TFLM arena) is a DIFFERENT quantity. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier (ring+c matrices+state) + routing gate = ~1.72 KB incremental over the TFLM baseline.",
-  "note_window": "g_win (480 B W-window) is current-py optimized out as a dead store (only written, never read until the on-device defense lands); it reappears when the defense consumes it."
+  "interpretation": "paper's ~14KB/7.3% == 2 x d^2 x f32 rotation-matrix pair at reference d=42 (14,112 B = 7.35%). Device SRAM (18.7 KB incl 16 KB TFLM arena, of which 1,150 B is benchmark DWT capture, non-production) and 60.9 KB flash are DIFFERENT quantities. At d=12 the matrix pair collapses to 1,152 B; planned MIDAS tier (ring+c matrices+state) + routing gate = ~1.72 KB incremental over the TFLM baseline.",
+  "note_defense_port": "The routing gate + fixed-basis Givens rotation are now LIVE on-device (firmware main.cc, DWT-measured). The folded gate weights g_An/g_bn (52 B), the offline-resolved basis g_b0/g_b1 (96 B) and the 64-entry sigmoid LUT (256 B) all reside in .rodata (flash), so the gate/basis add NO linker-allocated SRAM beyond g_x (48 B current-vector snapshot, live ingest). g_win (480 B W-window) is now READ by penetration_epsilon_windowed (no longer a dead store). Benchmark-only: g_stage_cyc[5][50] (1,000 B) + g_route[50] (50 B) DWT capture, separated above."
 }

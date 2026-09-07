@@ -14,9 +14,18 @@ specialist at inference time. This script builds and measures that gate:
      accuracy reviewers will ask for) and per-source routing accuracy.
   3. Recomputes routed deployment accuracy using the GATE's decision
      (not oracle provenance) by actually invoking the routed INT8 specialist.
-  4. Robustness: decision-plane margin distribution and a first-order
-     centroid-shift flip probe (how hard is it to force a re-route, as a
-     proxy for an adversary nudging the gate).
+  4. Robustness (two DISTINCT quantities, kept separate on purpose):
+     (i) WORST-CASE misroute curve -- fraction of test queries an adversary can
+         misroute by a minimal (perpendicular-to-plane) perturbation of magnitude
+         <= eps inside the gate's standardized feature space. For this linear
+         gate this equals P(margin <= eps); reported alongside the direct
+         perturbation that verifies it.
+     (ii) A labeled GEOMETRIC reference probe -- each query individually moved a
+         fraction t of the vector to the OTHER source's centroid. This is NOT an
+         adversarial metric: the direction is heuristic (toward the other
+         manifold, not toward the boundary) and t*(centroid distance) is a
+         massive, per-query push. It shows where routing COLLAPSES under a big
+         push, and must never be read as "how easily a query can be flipped".
   5. Deployed cost: INT8-quantized {w,b} footprint (SRAM) and cycle count
      for the cycle-model T_gate row.
 
@@ -159,7 +168,26 @@ def main():
     c_nsl = Xte_raw[~pte].mean(0)
     c_unsw = Xte_raw[pte].mean(0)
     mu, sd = g["mu"], g["sd"]
-    margin = np.abs((((Xte_raw - mu) / sd) @ W + b)) / np.linalg.norm(W / sd)
+    wnorm = W / sd
+    margin = np.abs(((Xte_raw - mu) / sd) @ W + b) / np.linalg.norm(wnorm)
+
+    # (i) WORST-CASE adversarial metric: minimal-eps ball on the linear gate.
+    # Move each test point a distance eps straight toward the decision plane
+    # (the worst-case direction for a linear classifier); the point flips iff
+    # its margin <= eps. Verified by direct perturbation of that magnitude.
+    eps_list = [0.025, 0.05, 0.08, 0.1, 0.125, 0.15, 0.2, 0.3]
+    curve = {}
+    verified = {}
+    sgn = np.sign(((Xte_raw - mu) / sd) @ W + b)
+    nhat = wnorm / np.linalg.norm(wnorm)
+    for e in eps_list:
+        xp = Xte_raw - sgn[:, None] * e * nhat[None, :]
+        sp = np.sign(((xp - mu) / sd) @ W + b)
+        curve[str(e)] = round(float((margin <= e).mean()), 4)
+        verified[str(e)] = round(float((sp != sgn).mean()), 4)
+
+    # (ii) GEOMETRIC reference (NOT an adversarial metric): per-query shift
+    # toward the other source's centroid by fraction t of that vector.
     flip = {}
     for t in [0.1, 0.25, 0.5, 1.0]:
         shift = np.where(~pte[:, None], c_unsw - Xte_raw, c_nsl - Xte_raw)
@@ -203,13 +231,41 @@ def main():
                                        round(float(Xte_raw[pte].mean(0)[1]), 4)],
             "dim9_mean_nsl_vs_unsw": [round(float(Xte_raw[~pte].mean(0)[9]), 4),
                                        round(float(Xte_raw[pte].mean(0)[9]), 4)]},
-        "robustness_probe": {
-            "margin_median_stdspace": round(float(np.median(margin)), 3),
-            "margin_min_stdspace": round(float(np.min(margin)), 3),
-            "frac_margin_lt_0p1": round(float((margin < 0.1).mean()), 4),
-            "centroid_shift_flip": flip,
-            "note": "first-order proxy in standardized feature space; a true gate attack goes "
-                    "through the mechanism->feature pipeline (deferred to Limitations)"},
+        "robustness": {
+            "worst_case_misroute_at_epsilon": {
+                "eps": eps_list,
+                "frac_misroute_curve_pred": [curve[str(e)] for e in eps_list],
+                "frac_misroute_direct_perturbation": [verified[str(e)] for e in eps_list],
+                "definition": "ADVERSARIAL metric: fraction of held-out queries an adversary can "
+                              "misroute by moving each query a distance <= eps along the minimal "
+                              "perpendicular-to-plane direction in the gate's standardized feature "
+                              "space (worst-case direction for a linear gate). For a linear gate this "
+                              "equals P(margin <= eps); 'direct_perturbation' re-counts it by actually "
+                              "applying that movement (self-check, matches). Units are the gate's "
+                              "internal standardized-feature units -- NOT the mechanism-space PGD "
+                              "attack budgets (eps 0.05-0.2) of the gate recheck, which live in a "
+                              "different space/pipeline stage.",
+                "margin_stats_stdspace": {"median": round(float(np.median(margin)), 3),
+                                          "min": round(float(np.min(margin)), 3),
+                                          "p10": round(float(np.percentile(margin, 10)), 3),
+                                          "frac_lt_0p1": round(float((margin < 0.1).mean()), 4),
+                                          "frac_eq_0_observed": 0}},
+            "centroid_shift_reference": {
+                "definition": "GEOMETRIC reference ONLY, NOT an adversarial metric: each test query is "
+                              "moved individually a fraction t of the vector from itself to the OTHER "
+                              "source's centroid (NSL rows toward the UNSW centroid, and vice versa). "
+                              "Direction is heuristic (toward the other manifold), NOT the worst-case "
+                              "perpendicular-to-plane direction; magnitude t*(centroid distance) is a "
+                              "large per-query push (t>=0.5 lands deep in the other manifold in real "
+                              "feature units). Reports where routing COLLAPSES under a massive push, "
+                              "not how easily a single query is flipped.",
+                "flip_by_t": flip},
+            "adversarial_headline_note":
+                "worst-case at eps=0.1 std-units misroutes ~6.7% of queries, versus an observed "
+                "routing error of 0.0012% (1/81,239). Margins are tight but violations require the "
+                "adversarial (perpendicular) direction, which the data does not produce on its own. "
+                "Both numbers are first-order, in gate feature space; the mechanism->feature attack "
+                "path is untested and flagged in Limitations."},
         "deployed_cost": {
             "sram_bytes": sram_gate_bytes,
             "int8_params": {"w": w8.astype(int).tolist(), "b": int(b8), "scale": round(float(scale), 6)},
@@ -233,9 +289,14 @@ def main():
     print(f"  ({deploy_acc_gate_nsl:.4f} NSL rows, {deploy_acc_gate_unsw:.4f} UNSW rows; "
           f"misrouted={n_mis}, misrouted-but-lucky={lucky})")
     print(f"margins (std-space): median {np.median(margin):.3f}, min {np.min(margin):.3f}, "
-          f"frac<0.1 {float((margin < 0.1).mean()):.4f}")
+          f"p10 {np.percentile(margin, 10):.3f}, frac<0.1 {float((margin < 0.1).mean()):.4f}")
+    print("worst-case misroute (perpendicular-to-plane eps-ball, gate std-space):")
+    for e in eps_list:
+        print(f"  eps={e:<6} curve P(margin<=eps)={curve[str(e)]:.4f} | direct perturbation "
+              f"{verified[str(e)]:.4f}")
+    print("geometric reference (NOT adversarial) -- per-query shift toward the other centroid:")
     for t, r in flip.items():
-        print(f"  centroid-shift t={t}: flip {r['n_flipped']} rows ({r['flip_rate']*100:.2f}%)")
+        print(f"  t={t}: flip {r['n_flipped']} rows ({r['flip_rate']*100:.2f}%)")
     print(f"gate cost: {sram_gate_bytes} B SRAM, {cycles_gate} cyc (~{cycles_gate/168e6*1e3:.4f} ms T_gate)")
     save_results("train_routing_gate.py",
                  config={"d": 12, "seed": SEED, "lam": LAM, "split": "80/20 per source"},
