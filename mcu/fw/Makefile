@@ -50,8 +50,12 @@ CFLAGS += -ffunction-sections -fdata-sections -fno-common
 CFLAGS += -DTF_LITE_STATIC_MEMORY
 CFLAGS += -DTF_LITE_DISABLE_X86_NEON
 CFLAGS += -DTF_LITE_STRIP_ERROR_STRINGS
+# Optional extra -D defines, e.g. `make DEFINES=-DDWT_GPIO_CROSS` (never a
+# command-line CFLAGS/CXXFLAGS override, which drops ARCH_FLAGS)
+DEFINES ?=
 
 CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions -std=c++17
+CFLAGS  += $(DEFINES)
 
 ASFLAGS  = $(ARCH_FLAGS) -Wall
 

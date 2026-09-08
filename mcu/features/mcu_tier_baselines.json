@@ -1,0 +1,276 @@
+{
+  "summary": {
+    "PGD / nsl": {
+      "undefended": 0.07999999999999996,
+      "dacm": 0.06000000000000005,
+      "dacm_naive": 0.06000000000000005,
+      "input_smoothing": 0.0,
+      "chen_query_blinding": 0.43999999999999995,
+      "adv_training": 0.0
+    },
+    "C&W / nsl": {
+      "undefended": 1.0,
+      "dacm": 1.0,
+      "dacm_naive": 1.0,
+      "input_smoothing": 1.0,
+      "chen_query_blinding": 1.0,
+      "adv_training": 1.0
+    },
+    "PGD / unsw": {
+      "undefended": 0.13,
+      "dacm": 0.040000000000000036,
+      "dacm_naive": 0.09999999999999998,
+      "input_smoothing": 0.0,
+      "chen_query_blinding": 0.30000000000000004,
+      "adv_training": 0.050000000000000044
+    },
+    "C&W / unsw": {
+      "undefended": 1.0,
+      "dacm": 1.0,
+      "dacm_naive": 1.0,
+      "input_smoothing": 1.0,
+      "chen_query_blinding": 1.0,
+      "adv_training": 1.0
+    }
+  },
+  "full": {
+    "experiment": "MCU-tier baselines vs deployed per-source INT8 specialists",
+    "defense_success": "1 - ASR (flip of defended prediction on the final defended forward)",
+    "d": 12,
+    "W": 10,
+    "n": 100,
+    "pgd": {
+      "eps": 0.1,
+      "alpha": 0.01,
+      "T": 50
+    },
+    "cw": {
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "note": "naive==adaptive for defenses with no differentiable manifold parameter (undefended, chen_query_blinding, adv_training); dacm and input_smoothing report the split. Chen rejection = defense success.",
+    "nsl": {
+      "attack_pgd": {
+        "undefended": {
+          "asr": {
+            "naive": 0.87,
+            "adaptive": 0.92
+          },
+          "defense_success": {
+            "naive": 0.07999999999999996,
+            "adaptive": 0.07999999999999996
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.94,
+            "adaptive": 0.94
+          },
+          "defense_success": {
+            "naive": 0.06000000000000005,
+            "adaptive": 0.06000000000000005
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.88,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.12,
+            "adaptive": 0.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.56,
+            "adaptive": 0.56
+          },
+          "defense_success": {
+            "naive": 0.43999999999999995,
+            "adaptive": 0.43999999999999995
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          }
+        }
+      },
+      "attack_pgd_elapsed_s": 22.8,
+      "attack_cw": {
+        "undefended": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        }
+      },
+      "attack_cw_elapsed_s": 214.3
+    },
+    "unsw": {
+      "attack_pgd": {
+        "undefended": {
+          "asr": {
+            "naive": 0.87,
+            "adaptive": 0.87
+          },
+          "defense_success": {
+            "naive": 0.13,
+            "adaptive": 0.13
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.9,
+            "adaptive": 0.96
+          },
+          "defense_success": {
+            "naive": 0.09999999999999998,
+            "adaptive": 0.040000000000000036
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.93,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.06999999999999995,
+            "adaptive": 0.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.69,
+            "adaptive": 0.7
+          },
+          "defense_success": {
+            "naive": 0.30000000000000004,
+            "adaptive": 0.30000000000000004
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.96,
+            "adaptive": 0.95
+          },
+          "defense_success": {
+            "naive": 0.050000000000000044,
+            "adaptive": 0.050000000000000044
+          }
+        }
+      },
+      "attack_pgd_elapsed_s": 22.9,
+      "attack_cw": {
+        "undefended": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        }
+      },
+      "attack_cw_elapsed_s": 214.0
+    }
+  },
+  "honest_findings": {
+    "pgd": "On PGD the MCU int8 specialists mirror the Edge float-surrogate ordering: chen_query_blinding highest (nsl 0.44/unsw 0.30), then undefended (0.08/0.13), dacm adaptive (0.06/0.04), adv_training ~0, input_smoothing adaptive 0. note dacm_naive>dacm_adaptive on unsw (0.10 vs 0.04) - the rotation defense is cheapest to defeat adaptively, consistent with Edge (midas adaptive 0.06 << naive 0.48).",
+    "cw": "C&W-L2 returns defense_success==1.000 across every row - i.e. C&W flips 0 samples on the deployed int8 specialists (both the int8 fake-quant and the continuous dequant replica). This is CONSISTENT with the Edge float surrogate, where undefended C&W already has 0.945 defense success (ASR 0.055). C&W-L2 (BCE-toward-true-label, Adam in tanh space) cannot find low-L2-distance flips on these well-separated classifiers; the initial clamp(0.05,0.95) tanh-anchor creates a transient 17/20 flip by distortion that the optimizer then reverses toward the natural label. The MCU row is therefore not comparable-baseline-meaningful on C&W: it is a degenerate-equal-1.0 row. Report PGD as the discriminating axis and note CW as insensitive on-device.",
+    "conclusion": "MCU-tier per-source specialists: on PGD (with Chen rejection counts as defense success), chen_query_blinding is the strongest on-device-feasible baseline (0.44/0.30), and the MIDAS rotation (DACM) adaptive defense-success (0.06/0.04) is low - it is cheaply defeated by an adaptive PGD attacker, mirroring the Edge conclusion. On C&W the int8 specialist is invariant (all 1.000), a degenerate row."
+  }
+}

@@ -1,0 +1,468 @@
+{
+  "experiment": "Ring-buffer W ablation on the MCU adaptive-attacker gate",
+  "note": "same attacked sample set across W (sampled at W_max); window = W-1 prior rows + current. gate PASS on vulnerable when any |gap| > 0.02.",
+  "d": 12,
+  "W_max": 10,
+  "n_samples": 200,
+  "attack_configs": [
+    "eps0.05_20",
+    "eps0.1_50",
+    "eps0.2_100"
+  ],
+  "nsl": {
+    "gamma": 0.970044,
+    "n": 200,
+    "by_W": {
+      "2": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.345,
+            "adaptive_asr": 0.66,
+            "gap": 0.315
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.475,
+            "adaptive_asr": 0.885,
+            "gap": 0.41
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.755,
+            "adaptive_asr": 0.895,
+            "gap": 0.14
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.975,
+            "adaptive_asr": 0.97,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.875,
+            "adaptive_asr": 0.95,
+            "gap": 0.075
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.765,
+            "adaptive_asr": 0.81,
+            "gap": 0.045
+          }
+        }
+      },
+      "3": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.34,
+            "adaptive_asr": 0.68,
+            "gap": 0.34
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.47,
+            "adaptive_asr": 0.86,
+            "gap": 0.39
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.74,
+            "adaptive_asr": 0.9,
+            "gap": 0.16
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.985,
+            "adaptive_asr": 0.99,
+            "gap": 0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.955,
+            "adaptive_asr": 0.885,
+            "gap": -0.07
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.835,
+            "adaptive_asr": 0.845,
+            "gap": 0.01
+          }
+        }
+      },
+      "4": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.335,
+            "adaptive_asr": 0.655,
+            "gap": 0.32
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.49,
+            "adaptive_asr": 0.87,
+            "gap": 0.38
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.755,
+            "adaptive_asr": 0.925,
+            "gap": 0.17
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 1.0,
+            "adaptive_asr": 0.995,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.915,
+            "adaptive_asr": 0.905,
+            "gap": -0.01
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.855,
+            "adaptive_asr": 0.79,
+            "gap": -0.065
+          }
+        }
+      },
+      "6": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.335,
+            "adaptive_asr": 0.66,
+            "gap": 0.325
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.49,
+            "adaptive_asr": 0.845,
+            "gap": 0.355
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.775,
+            "adaptive_asr": 0.93,
+            "gap": 0.155
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.98,
+            "adaptive_asr": 0.975,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.915,
+            "adaptive_asr": 0.915,
+            "gap": 0.0
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.83,
+            "adaptive_asr": 0.87,
+            "gap": 0.04
+          }
+        }
+      },
+      "8": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.34,
+            "adaptive_asr": 0.665,
+            "gap": 0.325
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.48,
+            "adaptive_asr": 0.85,
+            "gap": 0.37
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.805,
+            "adaptive_asr": 0.935,
+            "gap": 0.13
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.995,
+            "adaptive_asr": 0.98,
+            "gap": -0.015
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.96,
+            "adaptive_asr": 0.89,
+            "gap": -0.07
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.845,
+            "adaptive_asr": 0.8,
+            "gap": -0.045
+          }
+        }
+      },
+      "10": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.335,
+            "adaptive_asr": 0.665,
+            "gap": 0.33
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.47,
+            "adaptive_asr": 0.855,
+            "gap": 0.385
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.82,
+            "adaptive_asr": 0.95,
+            "gap": 0.13
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.98,
+            "adaptive_asr": 0.995,
+            "gap": 0.015
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.925,
+            "adaptive_asr": 0.92,
+            "gap": -0.005
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.845,
+            "adaptive_asr": 0.84,
+            "gap": -0.005
+          }
+        }
+      }
+    }
+  },
+  "unsw": {
+    "gamma": 0.612702,
+    "n": 200,
+    "by_W": {
+      "2": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.81,
+            "adaptive_asr": 0.805,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.655,
+            "adaptive_asr": 0.69,
+            "gap": 0.035
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.59,
+            "adaptive_asr": 0.575,
+            "gap": -0.015
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.97,
+            "adaptive_asr": 0.975,
+            "gap": 0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.915,
+            "adaptive_asr": 0.92,
+            "gap": 0.005
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.865,
+            "adaptive_asr": 0.81,
+            "gap": -0.055
+          }
+        }
+      },
+      "3": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.835,
+            "adaptive_asr": 0.805,
+            "gap": -0.03
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.72,
+            "adaptive_asr": 0.685,
+            "gap": -0.035
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.565,
+            "adaptive_asr": 0.575,
+            "gap": 0.01
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.955,
+            "adaptive_asr": 0.985,
+            "gap": 0.03
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.895,
+            "adaptive_asr": 0.92,
+            "gap": 0.025
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.84,
+            "adaptive_asr": 0.88,
+            "gap": 0.04
+          }
+        }
+      },
+      "4": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.785,
+            "adaptive_asr": 0.835,
+            "gap": 0.05
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.715,
+            "adaptive_asr": 0.695,
+            "gap": -0.02
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.55,
+            "adaptive_asr": 0.57,
+            "gap": 0.02
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.975,
+            "adaptive_asr": 0.945,
+            "gap": -0.03
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.865,
+            "adaptive_asr": 0.895,
+            "gap": 0.03
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.865,
+            "adaptive_asr": 0.865,
+            "gap": 0.0
+          }
+        }
+      },
+      "6": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.835,
+            "adaptive_asr": 0.83,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.68,
+            "adaptive_asr": 0.675,
+            "gap": -0.005
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.585,
+            "adaptive_asr": 0.58,
+            "gap": -0.005
+          }
+        },
+        "gate_passed": false,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.99,
+            "adaptive_asr": 1.0,
+            "gap": 0.01
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.885,
+            "adaptive_asr": 0.915,
+            "gap": 0.03
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.82,
+            "adaptive_asr": 0.83,
+            "gap": 0.01
+          }
+        }
+      },
+      "8": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.805,
+            "adaptive_asr": 0.81,
+            "gap": 0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.685,
+            "adaptive_asr": 0.7,
+            "gap": 0.015
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.585,
+            "adaptive_asr": 0.585,
+            "gap": 0.0
+          }
+        },
+        "gate_passed": false,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.985,
+            "adaptive_asr": 0.975,
+            "gap": -0.01
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.91,
+            "adaptive_asr": 0.9,
+            "gap": -0.01
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.84,
+            "adaptive_asr": 0.855,
+            "gap": 0.015
+          }
+        }
+      },
+      "10": {
+        "vulnerable_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.825,
+            "adaptive_asr": 0.82,
+            "gap": -0.005
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.695,
+            "adaptive_asr": 0.67,
+            "gap": -0.025
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.565,
+            "adaptive_asr": 0.62,
+            "gap": 0.055
+          }
+        },
+        "gate_passed": true,
+        "fixed_basis": {
+          "eps0.05_20": {
+            "naive_asr": 0.99,
+            "adaptive_asr": 0.975,
+            "gap": -0.015
+          },
+          "eps0.1_50": {
+            "naive_asr": 0.895,
+            "adaptive_asr": 0.895,
+            "gap": 0.0
+          },
+          "eps0.2_100": {
+            "naive_asr": 0.865,
+            "adaptive_asr": 0.835,
+            "gap": -0.03
+          }
+        }
+      }
+    }
+  }
+}

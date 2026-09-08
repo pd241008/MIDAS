@@ -1,0 +1,26 @@
+GPIO-toggle-vs-DWT cross-check  (Saleae Logic 8 @ 500 kHz, D2 = PA2)
+DWT_GPIO_CROSS firmware: PA2 toggled high around each 50-frame defense
+pipeline rep; DWT->CYCCNT captured at toggle-high and toggle-low.
+
+Capture : results/hardware/la_dwt_cross_reps.csv         (D2 runs)
+Probe   : /tmp/opencode/dwt_gx_dump.txt (SWD read of g_x_start/g_x_end)
+Board   : DISCO-F407VG, PLL 168 MHz from 8 MHz HSE, DWT TRCENA+CYCCNTENA
+
+LA pulse widths and Wall time = runlen / 500 kHz:
+  rep  LA_hi_run(smp)  wall(ms)   DWT(cyc)        implied rate
+  0    3758            7.5160     1,261,688       167.87 MHz
+  1    3790            7.5800     1,273,545       168.01 MHz
+  2    3790            7.5800     1,273,545       168.01 MHz
+  3    3790            7.5800     1,273,545       168.01 MHz
+  4    3790            7.5800     1,273,545       168.01 MHz
+Inter-pulse spacing (cross-check of both timebases):
+  rep  DWT_span (cyc)  LA_span (ms)  implied rate
+  0->1 49,261,741     293.228       168.00 MHz
+  1->2 49,273,598     293.290       168.00 MHz
+  2->3 49,273,598     293.292       168.00 MHz
+  3->4 49,273,598     293.290       168.00 MHz
+
+Conclusion: DWT_CYCCNT rate measured at 168.0 MHz, within 0.03% of the
+configured 168 MHz PLL (and of SCHED clock 168.56 MHz within LA/xtal
+tolerance). The LA's independent 500 kHz base agrees with DWT to <0.05%.
+This closes the GPIO-toggle-vs-DWT scope leg end-to-end.

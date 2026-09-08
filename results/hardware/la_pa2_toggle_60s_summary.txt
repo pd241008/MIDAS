@@ -1,0 +1,5 @@
+=== LA PA2 toggle evidence (60s @200kHz on D2) ===
+samples: 12000000 | ones: 5998495 (50.0%) | zeros: 6001505 (50.0%)
+transitions: 646 (5.38 Hz toggle)
+half-period histogram (s: count):
+  0.0929 : 645
