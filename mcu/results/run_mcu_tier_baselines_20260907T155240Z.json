@@ -1,0 +1,256 @@
+{
+  "timestamp": "20260907T155240Z",
+  "script": "run_mcu_tier_baselines.py",
+  "git_commit": "f71de41",
+  "config": {
+    "pgd": {
+      "eps": 0.1,
+      "alpha": 0.01,
+      "T": 50
+    },
+    "cw": {
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "W": 10,
+    "d": 12,
+    "n": 100
+  },
+  "results": {
+    "experiment": "MCU-tier baselines vs deployed per-source INT8 specialists",
+    "defense_success": "1 - ASR (flip of defended prediction on the final defended forward)",
+    "d": 12,
+    "W": 10,
+    "n": 100,
+    "pgd": {
+      "eps": 0.1,
+      "alpha": 0.01,
+      "T": 50
+    },
+    "cw": {
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "note": "naive==adaptive for defenses with no differentiable manifold parameter (undefended, chen_query_blinding, adv_training); dacm and input_smoothing report the split. Chen rejection = defense success.",
+    "nsl": {
+      "attack_pgd": {
+        "undefended": {
+          "asr": {
+            "naive": 0.87,
+            "adaptive": 0.92
+          },
+          "defense_success": {
+            "naive": 0.07999999999999996,
+            "adaptive": 0.07999999999999996
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.94,
+            "adaptive": 0.94
+          },
+          "defense_success": {
+            "naive": 0.06000000000000005,
+            "adaptive": 0.06000000000000005
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.88,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.12,
+            "adaptive": 0.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.56,
+            "adaptive": 0.56
+          },
+          "defense_success": {
+            "naive": 0.43999999999999995,
+            "adaptive": 0.43999999999999995
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          }
+        }
+      },
+      "attack_pgd_elapsed_s": 22.8,
+      "attack_cw": {
+        "undefended": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        }
+      },
+      "attack_cw_elapsed_s": 214.3
+    },
+    "unsw": {
+      "attack_pgd": {
+        "undefended": {
+          "asr": {
+            "naive": 0.87,
+            "adaptive": 0.87
+          },
+          "defense_success": {
+            "naive": 0.13,
+            "adaptive": 0.13
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.9,
+            "adaptive": 0.96
+          },
+          "defense_success": {
+            "naive": 0.09999999999999998,
+            "adaptive": 0.040000000000000036
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.93,
+            "adaptive": 1.0
+          },
+          "defense_success": {
+            "naive": 0.06999999999999995,
+            "adaptive": 0.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.69,
+            "adaptive": 0.7
+          },
+          "defense_success": {
+            "naive": 0.30000000000000004,
+            "adaptive": 0.30000000000000004
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.96,
+            "adaptive": 0.95
+          },
+          "defense_success": {
+            "naive": 0.050000000000000044,
+            "adaptive": 0.050000000000000044
+          }
+        }
+      },
+      "attack_pgd_elapsed_s": 22.9,
+      "attack_cw": {
+        "undefended": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "dacm": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "input_smoothing": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "chen_query_blinding": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        },
+        "adv_training": {
+          "asr": {
+            "naive": 0.0,
+            "adaptive": 0.0
+          },
+          "defense_success": {
+            "naive": 1.0,
+            "adaptive": 1.0
+          }
+        }
+      },
+      "attack_cw_elapsed_s": 214.0
+    }
+  }
+}

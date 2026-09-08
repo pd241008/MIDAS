@@ -27,6 +27,10 @@ name = "classify_transfer"
 required-features = ["tflite"]
 
 [[bin]]
+name = "sla_load_test"
+required-features = ["tflite"]
+
+[[bin]]
 name = "phase_latency"
 
 # TODO: When real TFLite C++ FFI is set up, link via build.rs to libtensorflowlite_c.so
