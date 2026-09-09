@@ -295,4 +295,4 @@ _[pd241008](https://github.com/pd241008) · [ct-os-dev-portfolio.vercel.app](htt
 
 ## License
 
-MIT
+[MIT](LICENSE)
