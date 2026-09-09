@@ -195,3 +195,30 @@ same sample set for every W, both basis configurations).
 > (W−1)·d·4 B (at W=10: 9·12·4 = 432 B), so W=2..4 is the memory-cheap operating
 > point with no measurable gate consequence.
 
+
+---
+
+## Item — UNSW gate non-confirmation: gradient-to-query alignment measured and refuted
+
+**Why:** The UNSW per-source "NOT confirmed" finding (attacker-coupled-basis gap
+collapses to noise at N=800, Gap/SE ≤ 0.75) is reported as an open question. A
+reviewer asked for the natural geometric explanation: the coupled-basis rotation
+lives in `span{v_t, v_t⊥}` built from the attacker's own query direction, so the
+adaptive advantage should require the loss gradient to have a large component in
+that 2-D subspace. Script `mcu/scripts/grad_query_alignment.py`, data
+`mcu/features/grad_query_alignment.json` + `mcu/results/grad_query_alignment_*.json`
+(N=200, same benign set and eps=0.1/T=50 config as the gate, measured over the
+full adaptive PGD trajectory, vulnerable basis):
+
+> **Gradient-to-query alignment does not explain the UNSW non-confirmation.** We
+> measured, over the same 200-sample adaptive PGD batches as the gate, the fraction
+> of the loss-gradient energy that lies inside the attacker's coupled rotation
+> subspace `span{v_t, v_t⊥}` (v_t = x − c_base). The d=12 random-plane baseline is
+> ≈ 0.167 (2/12). NSL measures 0.279; UNSW measures **0.692** — i.e. the specialist
+> that fails to confirm the coupled-basis gap has the *larger* gradient-to-query
+> alignment (mean |cos(∇J, v_t)| 0.664 vs 0.308). The proposed mechanism therefore
+> predicts the opposite of what is observed: a strong gradient-query coupling does
+> not by itself produce an adaptive basis-coupling advantage. UNSW's non-confirmation
+> remains mechanistically unexplained, but the obvious first hypothesis is now
+> directly ruled out by measurement rather than left as an unexamined open question.
+

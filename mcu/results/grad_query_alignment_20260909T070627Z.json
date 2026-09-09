@@ -1,0 +1,35 @@
+{
+  "timestamp": "20260909T070627Z",
+  "script": "grad_query_alignment.py",
+  "git_commit": "653fd1a",
+  "config": {
+    "eps": 0.1,
+    "alpha": 0.01,
+    "T": 50,
+    "N": 200
+  },
+  "results": {
+    "experiment": "Gradient-to-query alignment (coupled basis) per specialist",
+    "note": "mean |cos(grad_x J, v_t)| and projected-energy fraction onto span{v_t, v_perp} over the adaptive PGD trajectory (eps=0.1,T=50) on the same N=200 benign set as the gate.",
+    "config": {
+      "eps": 0.1,
+      "alpha": 0.01,
+      "T": 50,
+      "N": 200
+    },
+    "nsl": {
+      "mean_abs_cos_grad_v": 0.30754838755089015,
+      "mean_projected_energy_fraction": 0.27865321742031385,
+      "n_samples": 200,
+      "n_steps": 10000,
+      "gamma": 0.970044
+    },
+    "unsw": {
+      "mean_abs_cos_grad_v": 0.6637110489878683,
+      "mean_projected_energy_fraction": 0.6924413211502357,
+      "n_samples": 200,
+      "n_steps": 10000,
+      "gamma": 0.612702
+    }
+  }
+}
