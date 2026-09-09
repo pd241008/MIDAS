@@ -1,8 +1,8 @@
 <div align="center">
 
-# EDGE
+# MIDAS
 
-**A budget-gated, continuous-rotation adversarial defense that protects TinyML classifiers by rotating the decision manifold in reaction to observed feature trajectories — verified end-to-end on ARM Cortex-A76 (Raspberry Pi 5) and Cortex-M4F (STM32F407).**
+**A platform for adversarial defense of TinyML classifiers: the budget-gated, continuous-rotation EDGE defense prototyped in Python, ported to Rust, and deployed as INT8 firmware on ARM Cortex-A76 (Raspberry Pi 5) and Cortex-M4F (STM32F407).**
 
 [![Rust](https://img.shields.io/badge/rust-1.85+-E95522?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Python](https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=white)](https://python.org)
@@ -15,17 +15,17 @@
 
 ## Abstract
 
-MIDAS-Edge defends a lightweight classifier against adversarial examples by
-**continuously rotating the decision manifold** in reaction to observed feature
-trajectories, with a **budget-gated fallback** that guarantees real-time delivery
-even when the rotation overruns. The system is evaluated as a reference
-implementation (IEEE ICCD 2026) across three mirrored tiers — a three-thread Rust
-runtime (Edge), a Python shadow model for gradient probing (Shadow), and a
-bare-metal INT8 TFLM port (MCU). On-device the routed INT8 deployment reaches
-**0.8766 accuracy**, runs a full defense frame in **0.132 ms = 1.32% of a 10 ms
-SLA**, and uses **60.9 KB flash / 18.7 KB SRAM** on an STM32F407 — while the gate
-verification (N=800) confirms the adaptive-vulnerability control on NSL data and
-reports an honest per-source non-confirmation on UNSW data (ADR-0006).
+MIDAS is a platform that protects a lightweight classifier against adversarial
+examples by **continuously rotating the decision manifold** in reaction to
+observed feature trajectories, with a **budget-gated fallback** that guarantees
+real-time delivery even when the rotation overruns. The platform spans three
+mirrored tiers — a three-thread Rust runtime (Edge), a Python shadow model for
+gradient probing (Shadow), and a bare-metal INT8 TFLM port (MCU). On-device the
+routed INT8 deployment reaches **0.8766 accuracy**, runs a full defense frame in
+**0.132 ms = 1.32% of a 10 ms SLA**, and uses **60.9 KB flash / 18.7 KB SRAM**
+on an STM32F407 — while the gate verification (N=800) confirms the
+adaptive-vulnerability control on NSL data and reports an honest per-source
+non-confirmation on UNSW data (ADR-0006).
 
 ## Results
 
@@ -288,20 +288,6 @@ reproducible artifact.
 | Baseline battery (PGD + C&W) | ✅ |
 | W ablation + gradient-to-query alignment | ✅ |
 | Residual | ⏳ `results/pi/prod_ffi_deployment.json` open `pending` items |
-
-## Citation
-
-If you use this work:
-
-```bibtex
-@inproceedings{desai2026edge,
-  title     = {EDGE: Budget-Gated Rotation Defense for TinyML on
-               {ARM} {A76} and {Cortex-M4}},
-  author    = {Desai, Prathmesh P. and Co-authors},
-  booktitle = {IEEE International Conference on Computer Design (ICCD)},
-  year      = {2026}
-}
-```
 
 ---
 
