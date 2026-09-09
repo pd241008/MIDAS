@@ -25,3 +25,6 @@ __pycache__/
 shadow/trained_weights/
 
 data/
+
+# Paper prose change log — kept local, not published to GitHub
+/docs/paper_edits.md
