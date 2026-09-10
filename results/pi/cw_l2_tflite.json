@@ -1,0 +1,70 @@
+{
+  "table": "Production classifier C&W-L2 battery",
+  "note": "C&W-L2 (untargeted) against production classifier_float32.tflite. iters=100, c_steps=3, lr=0.01, initial_c=1.0. n=200, gamma=2.3061.",
+  "columns": [
+    "config",
+    "basis",
+    "attacker",
+    "ASR",
+    "median_L2",
+    "mean_L2",
+    "n"
+  ],
+  "rows": [
+    {
+      "config": "C&W-L2 fixed naive",
+      "basis": "fixed",
+      "attacker": "naive",
+      "ASR": 0.62,
+      "median_L2": 0.231461,
+      "mean_L2": 0.227291,
+      "n": 200,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    {
+      "config": "C&W-L2 fixed adaptive",
+      "basis": "fixed",
+      "attacker": "adaptive",
+      "ASR": 0.62,
+      "median_L2": 0.231977,
+      "mean_L2": 0.22803,
+      "n": 200,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    {
+      "config": "C&W-L2 attacker-coupled naive",
+      "basis": "attacker-coupled",
+      "attacker": "naive",
+      "ASR": 0.74,
+      "median_L2": 0.162724,
+      "mean_L2": 0.295504,
+      "n": 200,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    {
+      "config": "C&W-L2 attacker-coupled adaptive",
+      "basis": "attacker-coupled",
+      "attacker": "adaptive",
+      "ASR": 0.48,
+      "median_L2": 0.246236,
+      "mean_L2": 0.271201,
+      "n": 200,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    }
+  ],
+  "sources": [
+    "results/pi/check4_tflite.json"
+  ]
+}

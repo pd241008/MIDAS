@@ -1,0 +1,180 @@
+{
+  "table": "On-device adaptive-robustness - PGD sweep (production classifier)",
+  "note": "Attack-success = prediction flipped by the defended classifier. 'fixed' = deployed fixed PCA-2 basis; 'attacker-coupled' = basis an adaptive attacker who knows the rotation could exploit (gate basis). Production classifier_float32.tflite (d=42 W=10), n=200, gamma=2.3061 (recalibrated benign P95). PyTorch attack with exact production weights; float32 TFLite is bit-exact to PyTorch (max |\u0394p| = 1.9e-6).",
+  "columns": [
+    "config",
+    "basis",
+    "naive_ASR",
+    "adaptive_ASR",
+    "naive_defense_success=1-ASR",
+    "adaptive_defense_success=1-ASR",
+    "n"
+  ],
+  "rows": [
+    {
+      "config": "PGD T=20  eps=0.05",
+      "basis": "fixed",
+      "naive_ASR": 0.865,
+      "adaptive_ASR": 0.885,
+      "naive_defense_success=1-ASR": 0.135,
+      "adaptive_defense_success=1-ASR": 0.115,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.05",
+      "basis": "fixed",
+      "naive_ASR": 0.875,
+      "adaptive_ASR": 0.865,
+      "naive_defense_success=1-ASR": 0.125,
+      "adaptive_defense_success=1-ASR": 0.135,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.05",
+      "basis": "fixed",
+      "naive_ASR": 0.895,
+      "adaptive_ASR": 0.875,
+      "naive_defense_success=1-ASR": 0.105,
+      "adaptive_defense_success=1-ASR": 0.125,
+      "n": 200
+    },
+    {
+      "config": "PGD T=20  eps=0.1",
+      "basis": "fixed",
+      "naive_ASR": 0.93,
+      "adaptive_ASR": 0.93,
+      "naive_defense_success=1-ASR": 0.07,
+      "adaptive_defense_success=1-ASR": 0.07,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.1",
+      "basis": "fixed",
+      "naive_ASR": 0.93,
+      "adaptive_ASR": 0.94,
+      "naive_defense_success=1-ASR": 0.07,
+      "adaptive_defense_success=1-ASR": 0.06,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.1",
+      "basis": "fixed",
+      "naive_ASR": 0.94,
+      "adaptive_ASR": 0.94,
+      "naive_defense_success=1-ASR": 0.06,
+      "adaptive_defense_success=1-ASR": 0.06,
+      "n": 200
+    },
+    {
+      "config": "PGD T=20  eps=0.2",
+      "basis": "fixed",
+      "naive_ASR": 0.95,
+      "adaptive_ASR": 0.94,
+      "naive_defense_success=1-ASR": 0.05,
+      "adaptive_defense_success=1-ASR": 0.06,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.2",
+      "basis": "fixed",
+      "naive_ASR": 0.96,
+      "adaptive_ASR": 0.96,
+      "naive_defense_success=1-ASR": 0.04,
+      "adaptive_defense_success=1-ASR": 0.04,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.2",
+      "basis": "fixed",
+      "naive_ASR": 0.975,
+      "adaptive_ASR": 0.935,
+      "naive_defense_success=1-ASR": 0.025,
+      "adaptive_defense_success=1-ASR": 0.065,
+      "n": 200
+    },
+    {
+      "config": "PGD T=20  eps=0.05",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.54,
+      "adaptive_ASR": 0.705,
+      "naive_defense_success=1-ASR": 0.46,
+      "adaptive_defense_success=1-ASR": 0.295,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.05",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.51,
+      "adaptive_ASR": 0.705,
+      "naive_defense_success=1-ASR": 0.49,
+      "adaptive_defense_success=1-ASR": 0.295,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.05",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.495,
+      "adaptive_ASR": 0.72,
+      "naive_defense_success=1-ASR": 0.505,
+      "adaptive_defense_success=1-ASR": 0.28,
+      "n": 200
+    },
+    {
+      "config": "PGD T=20  eps=0.1",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.565,
+      "adaptive_ASR": 0.91,
+      "naive_defense_success=1-ASR": 0.435,
+      "adaptive_defense_success=1-ASR": 0.09,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.1",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.515,
+      "adaptive_ASR": 0.91,
+      "naive_defense_success=1-ASR": 0.485,
+      "adaptive_defense_success=1-ASR": 0.09,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.1",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.51,
+      "adaptive_ASR": 0.935,
+      "naive_defense_success=1-ASR": 0.49,
+      "adaptive_defense_success=1-ASR": 0.065,
+      "n": 200
+    },
+    {
+      "config": "PGD T=20  eps=0.2",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.48,
+      "adaptive_ASR": 0.945,
+      "naive_defense_success=1-ASR": 0.52,
+      "adaptive_defense_success=1-ASR": 0.055,
+      "n": 200
+    },
+    {
+      "config": "PGD T=50  eps=0.2",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.51,
+      "adaptive_ASR": 0.945,
+      "naive_defense_success=1-ASR": 0.49,
+      "adaptive_defense_success=1-ASR": 0.055,
+      "n": 200
+    },
+    {
+      "config": "PGD T=100 eps=0.2",
+      "basis": "attacker-coupled",
+      "naive_ASR": 0.545,
+      "adaptive_ASR": 0.945,
+      "naive_defense_success=1-ASR": 0.455,
+      "adaptive_defense_success=1-ASR": 0.055,
+      "n": 200
+    }
+  ],
+  "sources": [
+    "results/pi/check4_tflite.json"
+  ]
+}

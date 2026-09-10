@@ -1,0 +1,168 @@
+{
+  "table": "Production classifier attack battery (classifier_float32.tflite)",
+  "model": "classifier_float32.tflite",
+  "model_note": "float32 TFLite export of TrainedSurrogateModel (d=42, hidden=16, tanh, sigmoid). PyTorch and float32 TFLite are bit-exact (max |\u0394p| = 1.9e-6, zero label flips).",
+  "basis": "fixed PCA-2 (deployed) + attacker-coupled (gate)",
+  "gamma": 2.3061,
+  "d": 42,
+  "w": 10,
+  "n_samples": 200,
+  "data_source": "UNSW-NB15",
+  "elapsed_seconds": 463.9,
+  "pgd": {
+    "fixed": {
+      "PGD T=20  eps=0.05": {
+        "naive": 0.865,
+        "adaptive": 0.885,
+        "gap": 0.02,
+        "n": 200
+      },
+      "PGD T=50  eps=0.05": {
+        "naive": 0.875,
+        "adaptive": 0.865,
+        "gap": -0.01,
+        "n": 200
+      },
+      "PGD T=100 eps=0.05": {
+        "naive": 0.895,
+        "adaptive": 0.875,
+        "gap": -0.02,
+        "n": 200
+      },
+      "PGD T=20  eps=0.1": {
+        "naive": 0.93,
+        "adaptive": 0.93,
+        "gap": 0.0,
+        "n": 200
+      },
+      "PGD T=50  eps=0.1": {
+        "naive": 0.93,
+        "adaptive": 0.94,
+        "gap": 0.01,
+        "n": 200
+      },
+      "PGD T=100 eps=0.1": {
+        "naive": 0.94,
+        "adaptive": 0.94,
+        "gap": 0.0,
+        "n": 200
+      },
+      "PGD T=20  eps=0.2": {
+        "naive": 0.95,
+        "adaptive": 0.94,
+        "gap": -0.01,
+        "n": 200
+      },
+      "PGD T=50  eps=0.2": {
+        "naive": 0.96,
+        "adaptive": 0.96,
+        "gap": 0.0,
+        "n": 200
+      },
+      "PGD T=100 eps=0.2": {
+        "naive": 0.975,
+        "adaptive": 0.935,
+        "gap": -0.04,
+        "n": 200
+      }
+    },
+    "vulnerable": {
+      "PGD T=20  eps=0.05": {
+        "naive": 0.54,
+        "adaptive": 0.705,
+        "gap": 0.165,
+        "n": 200
+      },
+      "PGD T=50  eps=0.05": {
+        "naive": 0.51,
+        "adaptive": 0.705,
+        "gap": 0.195,
+        "n": 200
+      },
+      "PGD T=100 eps=0.05": {
+        "naive": 0.495,
+        "adaptive": 0.72,
+        "gap": 0.225,
+        "n": 200
+      },
+      "PGD T=20  eps=0.1": {
+        "naive": 0.565,
+        "adaptive": 0.91,
+        "gap": 0.345,
+        "n": 200
+      },
+      "PGD T=50  eps=0.1": {
+        "naive": 0.515,
+        "adaptive": 0.91,
+        "gap": 0.395,
+        "n": 200
+      },
+      "PGD T=100 eps=0.1": {
+        "naive": 0.51,
+        "adaptive": 0.935,
+        "gap": 0.425,
+        "n": 200
+      },
+      "PGD T=20  eps=0.2": {
+        "naive": 0.48,
+        "adaptive": 0.945,
+        "gap": 0.465,
+        "n": 200
+      },
+      "PGD T=50  eps=0.2": {
+        "naive": 0.51,
+        "adaptive": 0.945,
+        "gap": 0.435,
+        "n": 200
+      },
+      "PGD T=100 eps=0.2": {
+        "naive": 0.545,
+        "adaptive": 0.945,
+        "gap": 0.4,
+        "n": 200
+      }
+    }
+  },
+  "cw": {
+    "C&W-L2 fixed naive": {
+      "asr": 0.62,
+      "n": 200,
+      "median_l2": 0.231461,
+      "mean_l2": 0.227291,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "C&W-L2 fixed adaptive": {
+      "asr": 0.62,
+      "n": 200,
+      "median_l2": 0.231977,
+      "mean_l2": 0.22803,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "C&W-L2 attacker-coupled naive": {
+      "asr": 0.74,
+      "n": 200,
+      "median_l2": 0.162724,
+      "mean_l2": 0.295504,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    },
+    "C&W-L2 attacker-coupled adaptive": {
+      "asr": 0.48,
+      "n": 200,
+      "median_l2": 0.246236,
+      "mean_l2": 0.271201,
+      "iters": 100,
+      "c_steps": 3,
+      "lr": 0.01,
+      "initial_c": 1.0
+    }
+  }
+}

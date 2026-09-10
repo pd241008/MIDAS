@@ -1,0 +1,13 @@
+{
+  "model": "/root/workspace/workspace/03-Code/Projects/Legacy/Midas/models/classifier_float32.tflite",
+  "n": 1,
+  "naive_asr": 0.0,
+  "adaptive_asr": 1.0,
+  "naive_flips": 0,
+  "adaptive_flips": 1,
+  "reference_asr_originals": 0.0,
+  "label_balance": [
+    0.0,
+    1.0
+  ]
+}
